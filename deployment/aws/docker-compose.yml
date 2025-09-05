@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 데이터베이스
+  postgres:
+    image: postgres:15-alpine
+    container_name: llm_verification_db
+    environment:
+      POSTGRES_DB: llm_verification
+      POSTGRES_USER: llm_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ../database/migrations:/docker-entrypoint-initdb.d/migrations
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U llm_user -d llm_verification"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Flask 백엔드 서버
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: llm_verification_backend
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=postgresql://llm_user:${DB_PASSWORD}@postgres:5432/llm_verification
+      - SECRET_KEY=${SECRET_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - ETHEREUM_RPC_URL=${ETHEREUM_RPC_URL}
+      - PRIVATE_KEY=${PRIVATE_KEY}
+      - CONTRACT_ADDRESS=${CONTRACT_ADDRESS}
+      - CORS_ORIGINS=${CORS_ORIGINS}
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ../backend:/app
+    command: gunicorn --bind 0.0.0.0:5000 --workers 4 --timeout 120 app:app
+
+  # Nginx 리버스 프록시
+  nginx:
+    image: nginx:alpine
+    container_name: llm_verification_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
