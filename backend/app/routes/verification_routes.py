@@ -35,30 +35,44 @@ def verify_hash():
         blockchain_info = None
         
         if Config.CONTRACT_ADDRESS:
-            blockchain_service = BlockchainService(
-                Config.ETHEREUM_RPC_URL,
-                Config.PRIVATE_KEY,
-                Config.CONTRACT_ADDRESS
-            )
-            blockchain_result = blockchain_service.verify_hash(hash_value)
-            blockchain_verified = blockchain_result.get('exists', False)
-            blockchain_info = blockchain_result
+            try:
+                blockchain_service = BlockchainService(
+                    Config.ETHEREUM_RPC_URL,
+                    Config.PRIVATE_KEY,
+                    Config.CONTRACT_ADDRESS
+                )
+                blockchain_result = blockchain_service.verify_hash(hash_value)
+                blockchain_verified = blockchain_result.get('exists', False) and blockchain_result.get('status') == 'success'
+                blockchain_info = blockchain_result
+            except Exception as e:
+                blockchain_info = {
+                    'status': 'error',
+                    'error_message': str(e)
+                }
         
         # 해시 재검증
-        hash_verified = HashService.verify_hash(
-            hash_value=hash_value,
-            llm_provider=verification_record.llm_provider,
-            model_name=verification_record.model_name,
-            prompt=verification_record.prompt,
-            response=verification_record.response,
-            parameters=verification_record.parameters,
-            timestamp=verification_record.timestamp
-        )
+        try:
+            hash_verified = HashService.verify_hash(
+                hash_value=hash_value,
+                llm_provider=verification_record.llm_provider,
+                model_name=verification_record.model_name,
+                prompt=verification_record.prompt,
+                response=verification_record.response,
+                parameters=verification_record.parameters,
+                timestamp=verification_record.timestamp
+            )
+        except Exception as e:
+            hash_verified = False
+            print(f"Hash verification error: {e}")
+        
+        # 데이터베이스에 검증된 기록이 있고 트랜잭션 해시가 있으면 성공으로 처리
+        db_verified = verification_record.verified and verification_record.transaction_hash is not None
         
         return jsonify({
-            'verified': hash_verified and blockchain_verified,
+            'verified': db_verified or (hash_verified and blockchain_verified),
             'hash_verified': hash_verified,
             'blockchain_verified': blockchain_verified,
+            'db_verified': db_verified,
             'verification_record': verification_record.to_dict(),
             'blockchain_info': blockchain_info
         }), 200

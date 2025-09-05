@@ -43,7 +43,7 @@ contract LLMVerification is Ownable, ReentrancyGuard {
     uint256 public totalVerifications;
 
     // 생성자
-    constructor() Ownable(msg.sender) {}
+    constructor() Ownable() {}
 
     /**
      * @dev 해시를 블록체인에 저장
@@ -92,10 +92,6 @@ contract LLMVerification is Ownable, ReentrancyGuard {
         exists = record.exists;
         timestamp = record.timestamp;
         submitter = record.submitter;
-
-        // 검증 통계 업데이트 (읽기 전용이므로 실제로는 증가하지 않음)
-        // 이는 로그 목적으로만 사용
-        emit HashVerified(hash, exists, block.timestamp);
     }
 
     /**

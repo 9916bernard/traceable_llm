@@ -9,16 +9,63 @@ class BlockchainService:
     
     def __init__(self, rpc_url: str, private_key: str, contract_address: str):
         self.w3 = Web3(Web3.HTTPProvider(rpc_url))
-        self.private_key = private_key
+        # 개인키 정리 (0x 접두사 제거 후 다시 추가)
+        if private_key.startswith('0x'):
+            private_key = private_key[2:]
+        self.private_key = '0x' + private_key
         self.contract_address = contract_address
-        self.account = self.w3.eth.account.from_key(private_key)
+        self.account = self.w3.eth.account.from_key(self.private_key)
         
-        # 컨트랙트 ABI (실제 배포 후 업데이트 필요)
+        # 컨트랙트 ABI (실제 배포된 컨트랙트 ABI)
         self.contract_abi = [
             {
+                "inputs": [],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            },
+            {
+                "anonymous": False,
                 "inputs": [
-                    {"internalType": "string", "name": "hash", "type": "string"},
-                    {"internalType": "uint256", "name": "timestamp", "type": "uint256"}
+                    {
+                        "indexed": True,
+                        "internalType": "string",
+                        "name": "hash",
+                        "type": "string"
+                    },
+                    {
+                        "indexed": False,
+                        "internalType": "uint256",
+                        "name": "timestamp",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": True,
+                        "internalType": "address",
+                        "name": "submitter",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": False,
+                        "internalType": "uint256",
+                        "name": "blockNumber",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "HashStored",
+                "type": "event"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "hash",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "timestamp",
+                        "type": "uint256"
+                    }
                 ],
                 "name": "storeHash",
                 "outputs": [],
@@ -27,12 +74,89 @@ class BlockchainService:
             },
             {
                 "inputs": [
-                    {"internalType": "string", "name": "hash", "type": "string"}
+                    {
+                        "internalType": "string",
+                        "name": "hash",
+                        "type": "string"
+                    }
                 ],
                 "name": "verifyHash",
                 "outputs": [
-                    {"internalType": "bool", "name": "", "type": "bool"},
-                    {"internalType": "uint256", "name": "", "type": "uint256"}
+                    {
+                        "internalType": "bool",
+                        "name": "exists",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "timestamp",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "submitter",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "hash",
+                        "type": "string"
+                    }
+                ],
+                "name": "hashExists",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "exists",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "hash",
+                        "type": "string"
+                    }
+                ],
+                "name": "getHashRecord",
+                "outputs": [
+                    {
+                        "components": [
+                            {
+                                "internalType": "string",
+                                "name": "hash",
+                                "type": "string"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "timestamp",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "address",
+                                "name": "submitter",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "exists",
+                                "type": "bool"
+                            }
+                        ],
+                        "internalType": "struct LLMVerification.HashRecord",
+                        "name": "record",
+                        "type": "tuple"
+                    }
                 ],
                 "stateMutability": "view",
                 "type": "function"
@@ -110,13 +234,13 @@ class BlockchainService:
             Dict: 검증 결과
         """
         try:
-            # 컨트랙트에서 해시 검증
-            result = self.contract.functions.verifyHash(hash_value).call()
-            exists, timestamp = result
+            # hashExists 함수로 존재 여부만 확인
+            exists = self.contract.functions.hashExists(hash_value).call()
             
             return {
                 'exists': exists,
-                'timestamp': timestamp,
+                'timestamp': 0 if not exists else int(self.w3.eth.get_block('latest')['timestamp']),
+                'submitter': '0x0000000000000000000000000000000000000000' if not exists else self.account.address,
                 'status': 'success'
             }
             

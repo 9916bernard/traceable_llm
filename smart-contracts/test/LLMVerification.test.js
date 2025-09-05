@@ -34,9 +34,12 @@ describe("LLMVerification", function () {
     const testTimestamp = Math.floor(Date.now() / 1000);
 
     it("유효한 해시를 저장할 수 있어야 함", async function () {
-      await expect(llmVerification.storeHash(testHash, testTimestamp))
+      const tx = await llmVerification.storeHash(testHash, testTimestamp);
+      const receipt = await tx.wait();
+      
+      await expect(tx)
         .to.emit(llmVerification, "HashStored")
-        .withArgs(testHash, testTimestamp, owner.address, await ethers.provider.getBlockNumber());
+        .withArgs(testHash, testTimestamp, owner.address, receipt.blockNumber);
 
       const stats = await llmVerification.getStats();
       expect(stats[0]).to.equal(1);
@@ -112,8 +115,8 @@ describe("LLMVerification", function () {
   describe("해시 목록 조회", function () {
     const hashes = [
       "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456",
-      "b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef1234567",
-      "c3d4e5f6789012345678901234567890abcdef1234567890abcdef12345678"
+      "b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef1234567a",
+      "c3d4e5f6789012345678901234567890abcdef1234567890abcdef12345678bc"
     ];
 
     beforeEach(async function () {
