@@ -22,6 +22,8 @@ interface FormData {
 export default function LLMGenerator({ models }: LLMGeneratorProps) {
   const [result, setResult] = useState<LLMResponse | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string; response?: string; error?: string } | null>(null);
+  const [isTesting, setIsTesting] = useState(false);
 
   const {
     register,
@@ -56,6 +58,34 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
     },
     onSettled: () => {
       setIsGenerating(false);
+    },
+  });
+
+  // OpenAI API 테스트 뮤테이션
+  const testMutation = useMutation(llmApi.testConnection, {
+    onMutate: () => {
+      setIsTesting(true);
+      setTestResult(null);
+    },
+    onSuccess: (data) => {
+      setTestResult(data);
+      if (data.success) {
+        toast.success('OpenAI API 연결 성공!');
+      } else {
+        toast.error(`API 연결 실패: ${data.message}`);
+      }
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.error || error.message;
+      setTestResult({
+        success: false,
+        message: 'API 연결 실패',
+        error: errorMessage
+      });
+      toast.error(`API 연결 실패: ${errorMessage}`);
+    },
+    onSettled: () => {
+      setIsTesting(false);
     },
   });
 
@@ -191,31 +221,103 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
         </div>
 
         {/* 제출 버튼 */}
-        <div className="flex justify-end space-x-3">
+        <div className="flex justify-between">
           <button
             type="button"
-            onClick={() => reset()}
+            onClick={() => testMutation.mutate()}
             className="btn-outline"
-            disabled={isGenerating}
+            disabled={isTesting || isGenerating}
           >
-            초기화
-          </button>
-          <button
-            type="submit"
-            className="btn-primary"
-            disabled={isGenerating}
-          >
-            {isGenerating ? (
+            {isTesting ? (
               <div className="flex items-center space-x-2">
                 <div className="loading-spinner" />
-                <span>생성 중...</span>
+                <span>테스트 중...</span>
               </div>
             ) : (
-              'LLM 응답 생성'
+              'OpenAI API 테스트'
             )}
           </button>
+          
+          <div className="flex space-x-3">
+            <button
+              type="button"
+              onClick={() => reset()}
+              className="btn-outline"
+              disabled={isGenerating || isTesting}
+            >
+              초기화
+            </button>
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={isGenerating || isTesting}
+            >
+              {isGenerating ? (
+                <div className="flex items-center space-x-2">
+                  <div className="loading-spinner" />
+                  <span>생성 중...</span>
+                </div>
+              ) : (
+                'LLM 응답 생성'
+              )}
+            </button>
+          </div>
         </div>
       </form>
+
+      {/* 테스트 결과 표시 */}
+      {testResult && (
+        <div className="space-y-4 fade-in">
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">OpenAI API 테스트 결과</h3>
+            
+            <div className={`p-4 rounded-lg ${
+              testResult.success 
+                ? 'bg-green-50 border border-green-200' 
+                : 'bg-red-50 border border-red-200'
+            }`}>
+              <div className="flex items-center space-x-2 mb-2">
+                <span className={`w-3 h-3 rounded-full ${
+                  testResult.success ? 'bg-green-500' : 'bg-red-500'
+                }`} />
+                <span className={`font-medium ${
+                  testResult.success ? 'text-green-800' : 'text-red-800'
+                }`}>
+                  {testResult.success ? '연결 성공' : '연결 실패'}
+                </span>
+              </div>
+              
+              <p className={`text-sm ${
+                testResult.success ? 'text-green-700' : 'text-red-700'
+              }`}>
+                {testResult.message}
+              </p>
+              
+              {testResult.response && (
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    OpenAI 응답:
+                  </label>
+                  <div className="code-block bg-white">
+                    {testResult.response}
+                  </div>
+                </div>
+              )}
+              
+              {testResult.error && (
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    오류 메시지:
+                  </label>
+                  <div className="code-block bg-white text-red-600">
+                    {testResult.error}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 결과 표시 */}
       {result && (

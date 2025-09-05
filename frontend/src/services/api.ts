@@ -64,6 +64,12 @@ export const llmApi = {
     const response = await api.get('/llm/health');
     return response.data;
   },
+
+  // OpenAI API 연결 테스트
+  testConnection: async (): Promise<{ success: boolean; message: string; response?: string; error?: string }> => {
+    const response = await api.post('/llm/test');
+    return response.data;
+  },
 };
 
 // 검증 API 서비스

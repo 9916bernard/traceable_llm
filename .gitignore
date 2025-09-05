@@ -66,3 +66,6 @@ out/
 # Production builds
 build/
 dist/
+
+# Local development documentation
+IMPLEMENTATION_STATUS.md

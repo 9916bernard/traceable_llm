@@ -105,6 +105,45 @@ def get_available_models():
     
     return jsonify(models), 200
 
+@llm_bp.route('/test', methods=['POST'])
+def test_openai_connection():
+    """
+    OpenAI API 연결 테스트
+    """
+    try:
+        from app.services.llm_service import LLMService
+        
+        llm_service = LLMService()
+        
+        # 간단한 테스트 프롬프트
+        test_prompt = "안녕하세요! 간단한 인사말을 해주세요."
+        
+        # OpenAI API 호출 테스트
+        result = llm_service.call_llm(
+            provider='openai',
+            model='gpt-3.5-turbo',  # 안정적인 모델 사용
+            prompt=test_prompt,
+            parameters={
+                'temperature': 0.7,
+                'max_tokens': 100
+            }
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': 'OpenAI API 연결 성공!',
+            'response': result['content'],
+            'model': 'gpt-3.5-turbo',
+            'prompt': test_prompt
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'OpenAI API 연결 실패: {str(e)}',
+            'error': str(e)
+        }), 500
+
 @llm_bp.route('/health', methods=['GET'])
 def health_check():
     """

@@ -101,7 +101,7 @@ SELECT
     MAX(created_at) as last_record
 FROM verification_records vr
 LEFT JOIN llm_requests lr ON vr.id = lr.verification_record_id
-GROUP BY llm_provider, model_name;
+GROUP BY vr.llm_provider, vr.model_name;
 
 -- 일별 통계 뷰
 CREATE OR REPLACE VIEW daily_stats AS
@@ -127,7 +127,7 @@ RETURNS TABLE (
     model_name VARCHAR(100),
     prompt TEXT,
     response TEXT,
-    timestamp TIMESTAMP WITH TIME ZONE,
+    created_timestamp TIMESTAMP WITH TIME ZONE,
     verified BOOLEAN,
     created_at TIMESTAMP WITH TIME ZONE,
     rank REAL
