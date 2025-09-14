@@ -183,18 +183,34 @@ class BlockchainService:
             # 현재 타임스탬프
             timestamp = int(self.w3.eth.get_block('latest')['timestamp'])
             
+            # 가스 추정
+            try:
+                estimated_gas = self.contract.functions.storeHash(
+                    hash_value, timestamp
+                ).estimate_gas({'from': self.account.address})
+                gas_limit = int(estimated_gas * 1.2)  # 20% 여유분 추가
+            except Exception as e:
+                # 가스 추정 실패시 기본값 사용
+                gas_limit = 300000
+                print(f"Gas estimation failed, using default: {e}")
+            
             # 가스 가격 설정 (Sepolia testnet 최적화)
             gas_price = self.w3.eth.gas_price
-            # Sepolia testnet에서는 가스 가격을 조금 높여서 빠른 처리 보장
+            # Sepolia testnet에서는 가스 가격을 더 높여서 빠른 처리 보장
             if self.w3.eth.chain_id == 11155111:  # Sepolia chain ID
-                gas_price = int(gas_price * 1.1)  # 10% 높임
+                gas_price = int(gas_price * 1.5)  # 50% 높임 (더 안정적)
+            
+            # 최소 가스 가격 보장 (너무 낮으면 트랜잭션이 처리되지 않음)
+            min_gas_price = 1000000000  # 1 gwei
+            if gas_price < min_gas_price:
+                gas_price = min_gas_price
             
             # 트랜잭션 구성
             transaction = self.contract.functions.storeHash(
                 hash_value, timestamp
             ).build_transaction({
                 'from': self.account.address,
-                'gas': 200000,
+                'gas': gas_limit,
                 'gasPrice': gas_price,
                 'nonce': self.w3.eth.get_transaction_count(self.account.address),
             })
@@ -208,13 +224,19 @@ class BlockchainService:
             # 트랜잭션 영수증 대기
             tx_receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
             
-            # 검증 기록 업데이트
-            verification_record = VerificationRecord.query.get(verification_record_id)
-            if verification_record:
-                verification_record.transaction_hash = tx_hash.hex()
-                verification_record.block_number = tx_receipt.blockNumber
-                verification_record.verified = True
-                db.session.commit()
+            # 검증 기록 업데이트 (Flask 앱 컨텍스트 내에서만)
+            try:
+                from flask import current_app
+                with current_app.app_context():
+                    verification_record = VerificationRecord.query.get(verification_record_id)
+                    if verification_record:
+                        verification_record.transaction_hash = tx_hash.hex()
+                        verification_record.block_number = tx_receipt.blockNumber
+                        verification_record.verified = True
+                        db.session.commit()
+            except Exception as db_error:
+                # 데이터베이스 업데이트 실패는 트랜잭션 성공에 영향을 주지 않음
+                print(f"Database update failed: {db_error}")
             
             return {
                 'transaction_hash': tx_hash.hex(),
@@ -224,9 +246,21 @@ class BlockchainService:
             }
             
         except Exception as e:
+            error_msg = str(e)
+            # 구체적인 에러 메시지 제공
+            if "insufficient funds" in error_msg.lower():
+                error_msg = "계정 잔액이 부족합니다. Sepolia faucet에서 ETH를 받아주세요."
+            elif "gas" in error_msg.lower():
+                error_msg = f"가스 관련 오류: {error_msg}"
+            elif "nonce" in error_msg.lower():
+                error_msg = f"Nonce 오류: {error_msg}"
+            elif "revert" in error_msg.lower():
+                error_msg = f"스마트 컨트랙트 실행 실패: {error_msg}"
+            
             return {
                 'status': 'error',
-                'error_message': str(e)
+                'error_message': error_msg,
+                'original_error': str(e)
             }
     
     def verify_hash(self, hash_value: str) -> Dict[str, Any]:

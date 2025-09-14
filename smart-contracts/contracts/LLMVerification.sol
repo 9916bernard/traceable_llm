@@ -58,7 +58,7 @@ contract LLMVerification is Ownable, ReentrancyGuard {
         require(timestamp > 0, "Invalid timestamp");
         require(!hashRecords[hash].exists, "Hash already exists");
 
-        // 해시 기록 생성
+        // 해시 기록 생성 (가스 최적화를 위해 메모리 복사 최소화)
         hashRecords[hash] = HashRecord({
             hash: hash,
             timestamp: timestamp,
