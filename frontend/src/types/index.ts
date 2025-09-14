@@ -76,6 +76,9 @@ export interface BlockchainStatus {
   account_balance: string;
   status: string;
   error_message?: string;
+  network_name?: string;
+  explorer_url?: string;
+  faucet_url?: string;
 }
 
 export interface BlockchainCommitRequest {

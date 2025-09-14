@@ -143,8 +143,34 @@ export default function BlockchainStatus({ status, loading }: BlockchainStatusPr
               <span className="font-mono text-sm">{status.latest_block.toLocaleString()}</span>
             </div>
           )}
+          {status.network_id === 11155111 && (
+            <div className="flex justify-between">
+              <span className="text-gray-600">Explorer:</span>
+              <a 
+                href="https://sepolia.etherscan.io" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 font-mono text-sm"
+              >
+                sepolia.etherscan.io
+              </a>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Sepolia Testnet 전용 안내 */}
+      {status.network_id === 11155111 && (
+        <div className="card bg-yellow-50 border border-yellow-200">
+          <h3 className="text-lg font-semibold text-yellow-900 mb-4">🌐 Sepolia Testnet</h3>
+          <div className="space-y-2 text-yellow-800">
+            <p>• <strong>테스트넷</strong>이므로 실제 ETH가 소모되지 않습니다</p>
+            <p>• Sepolia ETH는 무료로 받을 수 있습니다</p>
+            <p>• <a href="https://sepoliafaucet.com/" target="_blank" rel="noopener noreferrer" className="underline">Sepolia Faucet</a>에서 테스트 ETH를 받으세요</p>
+            <p>• 모든 거래는 <a href="https://sepolia.etherscan.io" target="_blank" rel="noopener noreferrer" className="underline">Etherscan</a>에서 확인 가능합니다</p>
+          </div>
+        </div>
+      )}
 
       {/* 사용 가이드 */}
       <div className="card bg-blue-50 border border-blue-200">

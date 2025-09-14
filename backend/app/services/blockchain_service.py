@@ -183,13 +183,19 @@ class BlockchainService:
             # 현재 타임스탬프
             timestamp = int(self.w3.eth.get_block('latest')['timestamp'])
             
+            # 가스 가격 설정 (Sepolia testnet 최적화)
+            gas_price = self.w3.eth.gas_price
+            # Sepolia testnet에서는 가스 가격을 조금 높여서 빠른 처리 보장
+            if self.w3.eth.chain_id == 11155111:  # Sepolia chain ID
+                gas_price = int(gas_price * 1.1)  # 10% 높임
+            
             # 트랜잭션 구성
             transaction = self.contract.functions.storeHash(
                 hash_value, timestamp
             ).build_transaction({
                 'from': self.account.address,
                 'gas': 200000,
-                'gasPrice': self.w3.eth.gas_price,
+                'gasPrice': gas_price,
                 'nonce': self.w3.eth.get_transaction_count(self.account.address),
             })
             

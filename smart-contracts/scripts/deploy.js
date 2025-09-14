@@ -45,6 +45,14 @@ async function main() {
   if (network.chainId === 11155111n || network.chainId === 5n) {
     console.log("\n🔍 Etherscan 검증을 위해 다음 명령어를 실행하세요:");
     console.log(`npx hardhat verify --network ${network.name} ${contractAddress}`);
+    
+    // Sepolia testnet 전용 안내
+    if (network.chainId === 11155111n) {
+      console.log("\n🌐 Sepolia Testnet 정보:");
+      console.log("   - Explorer: https://sepolia.etherscan.io");
+      console.log(`   - Contract: https://sepolia.etherscan.io/address/${contractAddress}`);
+      console.log("   - Faucet: https://sepoliafaucet.com/ 또는 https://faucet.sepolia.dev/");
+    }
   }
 
   return {
