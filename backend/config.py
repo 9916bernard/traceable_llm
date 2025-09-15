@@ -17,6 +17,7 @@ class Config:
     ETHEREUM_RPC_URL = os.environ.get('ETHEREUM_RPC_URL') or 'https://sepolia.infura.io/v3/YOUR_PROJECT_ID'
     PRIVATE_KEY = os.environ.get('PRIVATE_KEY')
     CONTRACT_ADDRESS = os.environ.get('CONTRACT_ADDRESS')
+    ETHERSCAN_API_KEY = os.environ.get('ETHERSCAN_API_KEY')
     
     # CORS 설정
     CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:3000').split(',')

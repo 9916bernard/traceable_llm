@@ -52,21 +52,10 @@ export default function VerificationChecker() {
   };
 
   const handleCopyHash = async () => {
-    if (result?.verification_record.hash_value) {
-      const success = await copyToClipboard(result.verification_record.hash_value);
+    if (result?.transaction_hash) {
+      const success = await copyToClipboard(result.transaction_hash);
       if (success) {
-        toast.success('해시값이 클립보드에 복사되었습니다');
-      } else {
-        toast.error('복사에 실패했습니다');
-      }
-    }
-  };
-
-  const handleCopyResponse = async () => {
-    if (result?.verification_record.response) {
-      const success = await copyToClipboard(result.verification_record.response);
-      if (success) {
-        toast.success('응답이 클립보드에 복사되었습니다');
+        toast.success('트랜잭션 해시가 클립보드에 복사되었습니다');
       } else {
         toast.error('복사에 실패했습니다');
       }
@@ -78,15 +67,15 @@ export default function VerificationChecker() {
       {/* 검증 폼 */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
-          <label className="label">검증할 해시값</label>
+          <label className="label">검증할 트랜잭션 해시</label>
           <textarea
             {...register('hash_value', { 
-              required: '해시값을 입력해주세요',
-              minLength: { value: 64, message: '유효한 SHA-256 해시값을 입력해주세요' }
+              required: '트랜잭션 해시를 입력해주세요',
+              minLength: { value: 64, message: '유효한 트랜잭션 해시를 입력해주세요' }
             })}
             rows={3}
             className="textarea font-mono text-sm"
-            placeholder="검증할 SHA-256 해시값을 입력하세요..."
+            placeholder="검증할 Sepolia 트랜잭션 해시를 입력하세요..."
           />
           {errors.hash_value && (
             <p className="mt-1 text-sm text-error-600">{errors.hash_value.message}</p>
@@ -144,34 +133,19 @@ export default function VerificationChecker() {
                 </div>
               </div>
               
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center space-x-2">
-                  <span className={`w-3 h-3 rounded-full ${
-                    result.hash_verified ? 'bg-success-500' : 'bg-error-500'
-                  }`} />
-                  <span className="text-sm text-gray-700">
-                    해시 검증: {result.hash_verified ? '성공' : '실패'}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className={`w-3 h-3 rounded-full ${
-                    result.blockchain_verified ? 'bg-success-500' : 'bg-error-500'
-                  }`} />
-                  <span className="text-sm text-gray-700">
-                    블록체인 검증: {result.blockchain_verified ? '성공' : '실패'}
-                  </span>
-                </div>
+              <div className="mt-4">
+                <p className="text-sm text-gray-700">{result.message}</p>
               </div>
             </div>
 
-            {/* 검증 기록 정보 */}
+            {/* 트랜잭션 정보 */}
             <div className="space-y-4">
-              <h4 className="font-medium text-gray-900">검증 기록 정보</h4>
+              <h4 className="font-medium text-gray-900">트랜잭션 정보</h4>
               
-              {/* 해시 정보 */}
+              {/* 트랜잭션 해시 */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="label mb-0">해시값</label>
+                  <label className="label mb-0">트랜잭션 해시</label>
                   <button
                     onClick={handleCopyHash}
                     className="btn-outline text-xs"
@@ -180,93 +154,9 @@ export default function VerificationChecker() {
                   </button>
                 </div>
                 <div className="hash-display">
-                  {result.verification_record.hash_value}
+                  {result.transaction_hash}
                 </div>
               </div>
-
-              {/* 프롬프트 */}
-              <div>
-                <label className="label">프롬프트</label>
-                <div className="code-block">
-                  {result.verification_record.prompt}
-                </div>
-              </div>
-
-              {/* 응답 */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="label mb-0">LLM 응답</label>
-                  <button
-                    onClick={handleCopyResponse}
-                    className="btn-outline text-xs"
-                  >
-                    복사
-                  </button>
-                </div>
-                <div className="code-block">
-                  {result.verification_record.response}
-                </div>
-              </div>
-
-              {/* 메타 정보 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-medium text-gray-700">LLM 제공자:</span>
-                  <span className="ml-2">{result.verification_record.llm_provider}</span>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">모델:</span>
-                  <span className="ml-2">{result.verification_record.model_name}</span>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">생성 시간:</span>
-                  <span className="ml-2">{formatDate(result.verification_record.timestamp)}</span>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">검증 상태:</span>
-                  <span className={`ml-2 badge ${
-                    result.verification_record.verified ? 'badge-success' : 'badge-error'
-                  }`}>
-                    {result.verification_record.verified ? '검증됨' : '미검증'}
-                  </span>
-                </div>
-              </div>
-
-              {/* 파라미터 정보 */}
-              {result.verification_record.parameters && (
-                <div>
-                  <label className="label">LLM 파라미터</label>
-                  <div className="code-block">
-                    <pre>{JSON.stringify(result.verification_record.parameters, null, 2)}</pre>
-                  </div>
-                </div>
-              )}
-
-              {/* 블록체인 정보 */}
-              {result.verification_record.transaction_hash && (
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <h5 className="font-medium text-gray-900 mb-2">블록체인 정보</h5>
-                  <div className="space-y-2 text-sm">
-                    <div>
-                      <span className="font-medium text-gray-700">트랜잭션 해시:</span>
-                      <a
-                        href={getEtherscanUrl(result.verification_record.transaction_hash)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="ml-2 text-primary-600 hover:text-primary-800 font-mono"
-                      >
-                        {formatHash(result.verification_record.transaction_hash, 10)}
-                      </a>
-                    </div>
-                    {result.verification_record.block_number && (
-                      <div>
-                        <span className="font-medium text-gray-700">블록 번호:</span>
-                        <span className="ml-2">{result.verification_record.block_number}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
 
               {/* 블록체인 검증 상세 정보 */}
               {result.blockchain_info && (
@@ -281,10 +171,41 @@ export default function VerificationChecker() {
                         {result.blockchain_info.status}
                       </span>
                     </div>
-                    {result.blockchain_info.timestamp && (
+                    {result.blockchain_info.block_number && (
                       <div>
-                        <span className="font-medium text-gray-700">블록체인 타임스탬프:</span>
-                        <span className="ml-2">{formatDate(new Date(result.blockchain_info.timestamp * 1000).toISOString())}</span>
+                        <span className="font-medium text-gray-700">블록 번호:</span>
+                        <span className="ml-2">{result.blockchain_info.block_number}</span>
+                      </div>
+                    )}
+                    {result.blockchain_info.gas_used && (
+                      <div>
+                        <span className="font-medium text-gray-700">사용된 가스:</span>
+                        <span className="ml-2">{result.blockchain_info.gas_used.toLocaleString()}</span>
+                      </div>
+                    )}
+                    {result.blockchain_info.from_address && (
+                      <div>
+                        <span className="font-medium text-gray-700">발신자:</span>
+                        <span className="ml-2 font-mono">{result.blockchain_info.from_address}</span>
+                      </div>
+                    )}
+                    {result.blockchain_info.to_address && (
+                      <div>
+                        <span className="font-medium text-gray-700">수신자:</span>
+                        <span className="ml-2 font-mono">{result.blockchain_info.to_address}</span>
+                      </div>
+                    )}
+                    {result.blockchain_info.etherscan_url && (
+                      <div>
+                        <span className="font-medium text-gray-700">Etherscan:</span>
+                        <a
+                          href={result.blockchain_info.etherscan_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-2 text-primary-600 hover:text-primary-800"
+                        >
+                          트랜잭션 보기 →
+                        </a>
                       </div>
                     )}
                     {result.blockchain_info.error_message && (

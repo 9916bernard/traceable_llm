@@ -1,6 +1,5 @@
 from flask import Blueprint, request, jsonify
 from app.models.verification_record import VerificationRecord
-from app.services.hash_service import HashService
 from app.services.blockchain_service import BlockchainService
 from app import db
 from config import Config
@@ -11,7 +10,7 @@ verification_bp = Blueprint('verification', __name__)
 @verification_bp.route('/verify', methods=['POST'])
 def verify_hash():
     """
-    해시값을 통한 LLM 출력 검증
+    트랜잭션 해시를 통한 LLM 출력 검증 (Etherscan API 사용)
     """
     try:
         data = request.get_json()
@@ -21,60 +20,23 @@ def verify_hash():
         
         hash_value = data['hash_value']
         
-        # 데이터베이스에서 검증 기록 조회
-        verification_record = VerificationRecord.query.filter_by(hash_value=hash_value).first()
+        # Etherscan API를 통한 트랜잭션 검증
+        blockchain_service = BlockchainService(
+            Config.ETHEREUM_RPC_URL,
+            Config.PRIVATE_KEY,
+            Config.CONTRACT_ADDRESS
+        )
         
-        if not verification_record:
-            return jsonify({
-                'verified': False,
-                'message': '해당 해시값에 대한 기록을 찾을 수 없습니다'
-            }), 404
+        # 트랜잭션 해시 검증
+        verification_result = blockchain_service.verify_transaction_hash(hash_value)
         
-        # 블록체인에서 검증
-        blockchain_verified = False
-        blockchain_info = None
-        
-        if Config.CONTRACT_ADDRESS:
-            try:
-                blockchain_service = BlockchainService(
-                    Config.ETHEREUM_RPC_URL,
-                    Config.PRIVATE_KEY,
-                    Config.CONTRACT_ADDRESS
-                )
-                blockchain_result = blockchain_service.verify_hash(hash_value)
-                blockchain_verified = blockchain_result.get('exists', False) and blockchain_result.get('status') == 'success'
-                blockchain_info = blockchain_result
-            except Exception as e:
-                blockchain_info = {
-                    'status': 'error',
-                    'error_message': str(e)
-                }
-        
-        # 해시 재검증
-        try:
-            hash_verified = HashService.verify_hash(
-                hash_value=hash_value,
-                llm_provider=verification_record.llm_provider,
-                model_name=verification_record.model_name,
-                prompt=verification_record.prompt,
-                response=verification_record.response,
-                parameters=verification_record.parameters,
-                timestamp=verification_record.timestamp
-            )
-        except Exception as e:
-            hash_verified = False
-            print(f"Hash verification error: {e}")
-        
-        # 데이터베이스에 검증된 기록이 있고 트랜잭션 해시가 있으면 성공으로 처리
-        db_verified = verification_record.verified and verification_record.transaction_hash is not None
+        verified = verification_result.get('exists', False) and verification_result.get('is_success', False)
         
         return jsonify({
-            'verified': db_verified or (hash_verified and blockchain_verified),
-            'hash_verified': hash_verified,
-            'blockchain_verified': blockchain_verified,
-            'db_verified': db_verified,
-            'verification_record': verification_record.to_dict(),
-            'blockchain_info': blockchain_info
+            'verified': verified,
+            'transaction_hash': hash_value,
+            'blockchain_info': verification_result,
+            'message': '검증 완료' if verified else '트랜잭션을 찾을 수 없거나 실패했습니다'
         }), 200
         
     except Exception as e:

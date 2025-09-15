@@ -1,8 +1,11 @@
 from web3 import Web3
 import json
+import requests
+import os
 from typing import Dict, Any, Optional
 from app import db
 from app.models.verification_record import VerificationRecord
+from config import Config
 
 class BlockchainService:
     """블록체인 연동 서비스"""
@@ -265,7 +268,7 @@ class BlockchainService:
     
     def verify_hash(self, hash_value: str) -> Dict[str, Any]:
         """
-        블록체인에서 해시 검증
+        블록체인에서 해시 검증 (컨트랙트 함수 사용)
         
         Args:
             hash_value: 검증할 해시값
@@ -284,6 +287,126 @@ class BlockchainService:
                 'status': 'success'
             }
             
+        except Exception as e:
+            return {
+                'exists': False,
+                'status': 'error',
+                'error_message': str(e)
+            }
+    
+    def verify_transaction_hash(self, transaction_hash: str) -> Dict[str, Any]:
+        """
+        Etherscan API를 통해 트랜잭션 해시 검증
+        
+        Args:
+            transaction_hash: 검증할 트랜잭션 해시
+        
+        Returns:
+            Dict: 검증 결과
+        """
+        try:
+            # Sepolia Etherscan API URL
+            etherscan_url = "https://api-sepolia.etherscan.io/api"
+            api_key = Config.ETHERSCAN_API_KEY or ''
+            
+            # 트랜잭션 정보 조회
+            params = {
+                'module': 'proxy',
+                'action': 'eth_getTransactionByHash',
+                'txhash': transaction_hash,
+                'apikey': api_key
+            }
+            
+            response = requests.get(etherscan_url, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            
+            # 디버깅을 위한 로그 (개발 환경에서만)
+            print(f"Etherscan API 응답 (트랜잭션): {data}")
+            
+            if 'error' in data:
+                error_msg = data['error']
+                if isinstance(error_msg, dict):
+                    error_message = error_msg.get('message', str(error_msg))
+                else:
+                    error_message = str(error_msg)
+                return {
+                    'exists': False,
+                    'status': 'error',
+                    'error_message': error_message
+                }
+            
+            # 트랜잭션이 존재하는지 확인
+            if data['result'] is None:
+                return {
+                    'exists': False,
+                    'status': 'error',
+                    'error_message': '트랜잭션을 찾을 수 없습니다'
+                }
+            
+            # 트랜잭션 영수증 조회
+            receipt_params = {
+                'module': 'proxy',
+                'action': 'eth_getTransactionReceipt',
+                'txhash': transaction_hash,
+                'apikey': api_key
+            }
+            
+            receipt_response = requests.get(etherscan_url, params=receipt_params, timeout=10)
+            receipt_response.raise_for_status()
+            receipt_data = receipt_response.json()
+            
+            # 디버깅을 위한 로그 (개발 환경에서만)
+            print(f"Etherscan API 응답 (영수증): {receipt_data}")
+            
+            if 'error' in receipt_data:
+                error_msg = receipt_data['error']
+                if isinstance(error_msg, dict):
+                    error_message = error_msg.get('message', str(error_msg))
+                else:
+                    error_message = str(error_msg)
+                return {
+                    'exists': False,
+                    'status': 'error',
+                    'error_message': error_message
+                }
+            
+            receipt = receipt_data['result']
+            
+            # 트랜잭션 영수증이 없는 경우
+            if receipt is None:
+                return {
+                    'exists': False,
+                    'status': 'error',
+                    'error_message': '트랜잭션 영수증을 찾을 수 없습니다'
+                }
+            
+            # 트랜잭션 성공 여부 확인
+            status = receipt.get('status', '0x0')
+            is_success = status == '0x1'
+            
+            # 트랜잭션 정보 안전하게 접근
+            tx_result = data['result']
+            
+            return {
+                'exists': True,
+                'transaction_hash': transaction_hash,
+                'block_number': int(receipt['blockNumber'], 16) if receipt.get('blockNumber') else None,
+                'gas_used': int(receipt['gasUsed'], 16) if receipt.get('gasUsed') else None,
+                'status': 'success' if is_success else 'failed',
+                'is_success': is_success,
+                'from_address': tx_result.get('from'),
+                'to_address': tx_result.get('to'),
+                'value': tx_result.get('value'),
+                'etherscan_url': f"https://sepolia.etherscan.io/tx/{transaction_hash}"
+            }
+            
+        except requests.exceptions.RequestException as e:
+            return {
+                'exists': False,
+                'status': 'error',
+                'error_message': f'Etherscan API 요청 실패: {str(e)}'
+            }
         except Exception as e:
             return {
                 'exists': False,

@@ -57,15 +57,21 @@ export interface VerificationRequest {
 
 export interface VerificationResponse {
   verified: boolean;
-  hash_verified: boolean;
-  blockchain_verified: boolean;
-  verification_record: VerificationRecord;
-  blockchain_info?: {
+  transaction_hash: string;
+  blockchain_info: {
     exists: boolean;
-    timestamp?: number;
+    transaction_hash?: string;
+    block_number?: number;
+    gas_used?: number;
     status: string;
+    is_success?: boolean;
+    from_address?: string;
+    to_address?: string;
+    value?: string;
+    etherscan_url?: string;
     error_message?: string;
   };
+  message: string;
 }
 
 // 블록체인 관련 타입 정의
