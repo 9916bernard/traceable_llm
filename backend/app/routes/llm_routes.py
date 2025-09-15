@@ -74,7 +74,14 @@ def generate_with_verification():
                 Config.PRIVATE_KEY,
                 Config.CONTRACT_ADDRESS
             )
-            commit_result = blockchain_service.commit_hash(hash_value, verification_record.id)
+            commit_result = blockchain_service.commit_hash(
+                hash_value, 
+                prompt, 
+                llm_response['content'], 
+                provider, 
+                model, 
+                verification_record.id
+            )
             result['blockchain_commit'] = commit_result
             
             # 성공적으로 커밋된 경우, 로컬 해시 대신 트랜잭션 해시를 반환

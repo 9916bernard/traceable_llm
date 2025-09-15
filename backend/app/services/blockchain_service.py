@@ -19,7 +19,7 @@ class BlockchainService:
         self.contract_address = contract_address
         self.account = self.w3.eth.account.from_key(self.private_key)
         
-        # 컨트랙트 ABI (실제 배포된 컨트랙트 ABI)
+        # 컨트랙트 ABI (LLMRecord 구조체 지원)
         self.contract_abi = [
             {
                 "inputs": [],
@@ -33,6 +33,30 @@ class BlockchainService:
                         "indexed": True,
                         "internalType": "string",
                         "name": "hash",
+                        "type": "string"
+                    },
+                    {
+                        "indexed": False,
+                        "internalType": "string",
+                        "name": "prompt",
+                        "type": "string"
+                    },
+                    {
+                        "indexed": False,
+                        "internalType": "string",
+                        "name": "response",
+                        "type": "string"
+                    },
+                    {
+                        "indexed": False,
+                        "internalType": "string",
+                        "name": "llm_provider",
+                        "type": "string"
+                    },
+                    {
+                        "indexed": False,
+                        "internalType": "string",
+                        "name": "model_name",
                         "type": "string"
                     },
                     {
@@ -54,7 +78,7 @@ class BlockchainService:
                         "type": "uint256"
                     }
                 ],
-                "name": "HashStored",
+                "name": "LLMRecordStored",
                 "type": "event"
             },
             {
@@ -65,12 +89,32 @@ class BlockchainService:
                         "type": "string"
                     },
                     {
+                        "internalType": "string",
+                        "name": "prompt",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "response",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "llm_provider",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "model_name",
+                        "type": "string"
+                    },
+                    {
                         "internalType": "uint256",
                         "name": "timestamp",
                         "type": "uint256"
                     }
                 ],
-                "name": "storeHash",
+                "name": "storeLLMRecord",
                 "outputs": [],
                 "stateMutability": "nonpayable",
                 "type": "function"
@@ -83,12 +127,32 @@ class BlockchainService:
                         "type": "string"
                     }
                 ],
-                "name": "verifyHash",
+                "name": "getLLMRecord",
                 "outputs": [
                     {
                         "internalType": "bool",
                         "name": "exists",
                         "type": "bool"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "prompt",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "response",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "llm_provider",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "model_name",
+                        "type": "string"
                     },
                     {
                         "internalType": "uint256",
@@ -122,47 +186,6 @@ class BlockchainService:
                 ],
                 "stateMutability": "view",
                 "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "hash",
-                        "type": "string"
-                    }
-                ],
-                "name": "getHashRecord",
-                "outputs": [
-                    {
-                        "components": [
-                            {
-                                "internalType": "string",
-                                "name": "hash",
-                                "type": "string"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "timestamp",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "address",
-                                "name": "submitter",
-                                "type": "address"
-                            },
-                            {
-                                "internalType": "bool",
-                                "name": "exists",
-                                "type": "bool"
-                            }
-                        ],
-                        "internalType": "struct LLMVerification.HashRecord",
-                        "name": "record",
-                        "type": "tuple"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
             }
         ]
         
@@ -171,12 +194,16 @@ class BlockchainService:
             abi=self.contract_abi
         )
     
-    def commit_hash(self, hash_value: str, verification_record_id: int) -> Dict[str, Any]:
+    def commit_hash(self, hash_value: str, prompt: str, response: str, llm_provider: str, model_name: str, verification_record_id: int) -> Dict[str, Any]:
         """
-        해시를 블록체인에 커밋
+        LLM 기록을 블록체인에 커밋
         
         Args:
             hash_value: 커밋할 해시값
+            prompt: 원본 프롬프트
+            response: LLM 응답
+            llm_provider: LLM 제공자
+            model_name: 모델명
             verification_record_id: 검증 기록 ID
         
         Returns:
@@ -188,13 +215,13 @@ class BlockchainService:
             
             # 가스 추정
             try:
-                estimated_gas = self.contract.functions.storeHash(
-                    hash_value, timestamp
+                estimated_gas = self.contract.functions.storeLLMRecord(
+                    hash_value, prompt, response, llm_provider, model_name, timestamp
                 ).estimate_gas({'from': self.account.address})
                 gas_limit = int(estimated_gas * 1.2)  # 20% 여유분 추가
             except Exception as e:
-                # 가스 추정 실패시 기본값 사용
-                gas_limit = 300000
+                # 가스 추정 실패시 기본값 사용 (텍스트 저장으로 인해 더 많은 가스 필요)
+                gas_limit = 500000
                 print(f"Gas estimation failed, using default: {e}")
             
             # 가스 가격 설정 (Sepolia testnet 최적화)
@@ -208,9 +235,16 @@ class BlockchainService:
             if gas_price < min_gas_price:
                 gas_price = min_gas_price
             
+            # 문자열을 안전하게 처리 (UTF-8 인코딩)
+            # 한글 등 유니코드 문자가 깨지지 않도록 보장
+            safe_prompt = prompt.encode('utf-8', errors='ignore').decode('utf-8')
+            safe_response = response.encode('utf-8', errors='ignore').decode('utf-8')
+            safe_llm_provider = llm_provider.encode('utf-8', errors='ignore').decode('utf-8')
+            safe_model_name = model_name.encode('utf-8', errors='ignore').decode('utf-8')
+            
             # 트랜잭션 구성
-            transaction = self.contract.functions.storeHash(
-                hash_value, timestamp
+            transaction = self.contract.functions.storeLLMRecord(
+                hash_value, safe_prompt, safe_response, safe_llm_provider, safe_model_name, timestamp
             ).build_transaction({
                 'from': self.account.address,
                 'gas': gas_limit,
@@ -284,6 +318,55 @@ class BlockchainService:
                 'exists': exists,
                 'timestamp': 0 if not exists else int(self.w3.eth.get_block('latest')['timestamp']),
                 'submitter': '0x0000000000000000000000000000000000000000' if not exists else self.account.address,
+                'status': 'success'
+            }
+            
+        except Exception as e:
+            return {
+                'exists': False,
+                'status': 'error',
+                'error_message': str(e)
+            }
+    
+    def verify_llm_record(self, hash_value: str) -> Dict[str, Any]:
+        """
+        블록체인에서 LLM 기록 검증
+        
+        Args:
+            hash_value: 검증할 해시값
+        
+        Returns:
+            Dict: 검증 결과 (프롬프트, 응답, 모델 정보 포함)
+        """
+        try:
+            # 블록체인에서 LLM 기록 조회
+            result = self.contract.functions.getLLMRecord(hash_value).call()
+            
+            exists = result[0]
+            if not exists:
+                return {
+                    'exists': False,
+                    'status': 'error',
+                    'error_message': 'LLM 기록을 찾을 수 없습니다'
+                }
+            
+            # UTF-8 문자열 안전하게 처리 (한글 깨짐 방지)
+            prompt = result[1] if result[1] else ""
+            response = result[2] if result[2] else ""
+            llm_provider = result[3] if result[3] else ""
+            model_name = result[4] if result[4] else ""
+            timestamp = result[5]
+            submitter = result[6]
+            
+            return {
+                'exists': True,
+                'hash_value': hash_value,
+                'prompt': prompt,
+                'response': response,
+                'llm_provider': llm_provider,
+                'model_name': model_name,
+                'timestamp': timestamp,
+                'submitter': submitter,
                 'status': 'success'
             }
             
