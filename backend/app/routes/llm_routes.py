@@ -96,62 +96,59 @@ def generate_with_verification():
 @llm_bp.route('/models', methods=['GET'])
 def get_available_models():
     """
-    사용 가능한 LLM 모델 목록 조회
+    사용 가능한 LLM 모델 목록 조회 (저가 모델만)
     """
     models = {
-        'openai': [
-            'gpt-5-mini',
-            'gpt-5-turbo',
-            'gpt-4',
-            'gpt-4-turbo',
-            'gpt-3.5-turbo',
-            'gpt-3.5-turbo-16k'
-        ],
-        'anthropic': [
-            'claude-3-opus-20240229',
-            'claude-3-sonnet-20240229',
-            'claude-3-haiku-20240307'
-        ]
+        'openai': ['gpt-5-mini'],
+        'grok': ['llama-3.3-70b-instruct:free'],
+        'claude': ['claude-3.7-sonnet'],
+        'gemini': ['gemini-2.5-flash-lite'],
+        'deepseek': ['deepseek-chat-v3.1:free']
     }
     
     return jsonify(models), 200
 
 @llm_bp.route('/test', methods=['POST'])
-def test_openai_connection():
+def test_openrouter_connection():
     """
-    OpenAI API 연결 테스트
+    OpenRouter API 연결 테스트 (사용자 입력 프롬프트 사용)
     """
     try:
         from app.services.llm_service import LLMService
         
+        data = request.get_json() or {}
+        
+        # 사용자가 입력한 프롬프트 사용, 없으면 기본값
+        test_prompt = data.get('prompt', "안녕하세요! 간단한 인사말을 해주세요.")
+        provider = data.get('provider', 'openai')
+        model = data.get('model', 'gpt-5-mini')
+        
         llm_service = LLMService()
         
-        # 간단한 테스트 프롬프트
-        test_prompt = "안녕하세요! 간단한 인사말을 해주세요."
-        
-        # OpenAI API 호출 테스트
+        # OpenRouter를 통한 API 호출 테스트
         result = llm_service.call_llm(
-            provider='openai',
-            model='gpt-3.5-turbo',  # 안정적인 모델 사용
+            provider=provider,
+            model=model,
             prompt=test_prompt,
             parameters={
                 'temperature': 0.7,
-                'max_tokens': 100
+                'max_tokens': 500
             }
         )
         
         return jsonify({
             'success': True,
-            'message': 'OpenAI API 연결 성공!',
+            'message': 'OpenRouter API 연결 성공!',
             'response': result['content'],
-            'model': 'gpt-3.5-turbo',
+            'model': result['model'],
+            'provider': result['provider'],
             'prompt': test_prompt
         }), 200
         
     except Exception as e:
         return jsonify({
             'success': False,
-            'message': f'OpenAI API 연결 실패: {str(e)}',
+            'message': f'OpenRouter API 연결 실패: {str(e)}',
             'error': str(e)
         }), 500
 
@@ -166,7 +163,7 @@ def health_check():
         # 간단한 테스트 요청
         test_response = llm_service.call_llm(
             provider='openai',
-            model='gpt-3.5-turbo',
+            model='gpt-5-mini',
             prompt='Hello',
             parameters={'max_tokens': 10}
         )

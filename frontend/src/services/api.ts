@@ -11,11 +11,12 @@ import {
   SearchRequest,
   SearchResponse,
   PaginatedResponse,
+  TestResponse,
 } from '@/types';
 
 // API 기본 설정
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -65,9 +66,9 @@ export const llmApi = {
     return response.data;
   },
 
-  // OpenAI API 연결 테스트
-  testConnection: async (): Promise<{ success: boolean; message: string; response?: string; error?: string }> => {
-    const response = await api.post('/llm/test');
+  // OpenRouter API 연결 테스트
+  testConnection: async (data?: { prompt?: string; provider?: string; model?: string }): Promise<TestResponse> => {
+    const response = await api.post('/llm/test', data || {});
     return response.data;
   },
 };

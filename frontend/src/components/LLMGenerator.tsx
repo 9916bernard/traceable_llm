@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useMutation } from 'react-query';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import { LLMRequest, LLMResponse } from '@/types';
+import { LLMRequest, LLMResponse, TestResponse } from '@/types';
 import { llmApi } from '@/services/api';
 import { formatResponseTime, copyToClipboard, getEtherscanUrl } from '@/utils';
 
@@ -22,7 +22,7 @@ interface FormData {
 export default function LLMGenerator({ models }: LLMGeneratorProps) {
   const [result, setResult] = useState<LLMResponse | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string; response?: string; error?: string } | null>(null);
+  const [testResult, setTestResult] = useState<TestResponse | null>(null);
   const [isTesting, setIsTesting] = useState(false);
 
   const {
@@ -34,9 +34,9 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
   } = useForm<FormData>({
     defaultValues: {
       provider: 'openai',
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-5-mini',
       temperature: 0.7,
-      max_tokens: 1000,
+      max_tokens: 2000,
       commit_to_blockchain: true,
     },
   });
@@ -61,33 +61,37 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
     },
   });
 
-  // OpenAI API 테스트 뮤테이션
-  const testMutation = useMutation(llmApi.testConnection, {
-    onMutate: () => {
-      setIsTesting(true);
-      setTestResult(null);
-    },
-    onSuccess: (data) => {
-      setTestResult(data);
-      if (data.success) {
-        toast.success('OpenAI API 연결 성공!');
-      } else {
-        toast.error(`API 연결 실패: ${data.message}`);
-      }
-    },
-    onError: (error: any) => {
-      const errorMessage = error.response?.data?.error || error.message;
-      setTestResult({
-        success: false,
-        message: 'API 연결 실패',
-        error: errorMessage
-      });
-      toast.error(`API 연결 실패: ${errorMessage}`);
-    },
-    onSettled: () => {
-      setIsTesting(false);
-    },
-  });
+  // OpenRouter API 테스트 뮤테이션
+  const testMutation = useMutation(
+    (testData: { prompt: string; provider: string; model: string }) => 
+      llmApi.testConnection(testData),
+    {
+      onMutate: () => {
+        setIsTesting(true);
+        setTestResult(null);
+      },
+      onSuccess: (data) => {
+        setTestResult(data);
+        if (data.success) {
+          toast.success('OpenRouter API 연결 성공!');
+        } else {
+          toast.error(`API 연결 실패: ${data.message}`);
+        }
+      },
+      onError: (error: any) => {
+        const errorMessage = error.response?.data?.error || error.message;
+        setTestResult({
+          success: false,
+          message: 'API 연결 실패',
+          error: errorMessage
+        });
+        toast.error(`API 연결 실패: ${errorMessage}`);
+      },
+      onSettled: () => {
+        setIsTesting(false);
+      },
+    }
+  );
 
   const onSubmit = (data: FormData) => {
     const request: LLMRequest = {
@@ -140,7 +144,11 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
             >
               {models && Object.keys(models).map((provider) => (
                 <option key={provider} value={provider}>
-                  {provider === 'openai' ? 'OpenAI' : provider === 'anthropic' ? 'Anthropic' : provider}
+                  {provider === 'openai' ? 'OpenAI' : 
+                   provider === 'grok' ? 'Llama' :
+                   provider === 'claude' ? 'Claude' :
+                   provider === 'gemini' ? 'Gemini' :
+                   provider === 'deepseek' ? 'DeepSeek' : provider}
                 </option>
               ))}
             </select>
@@ -201,7 +209,7 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
             <input
               type="number"
               min="1"
-              max="4000"
+              max="8000"
               {...register('max_tokens', { valueAsNumber: true })}
               className="input"
             />
@@ -224,7 +232,18 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
         <div className="flex justify-between">
           <button
             type="button"
-            onClick={() => testMutation.mutate()}
+            onClick={() => {
+              const currentData = watch();
+              if (!currentData.prompt) {
+                toast.error('테스트를 위해 프롬프트를 입력해주세요');
+                return;
+              }
+              testMutation.mutate({
+                prompt: currentData.prompt,
+                provider: currentData.provider,
+                model: currentData.model
+              });
+            }}
             className="btn-outline"
             disabled={isTesting || isGenerating}
           >
@@ -234,7 +253,7 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
                 <span>테스트 중...</span>
               </div>
             ) : (
-              'OpenAI API 테스트'
+              'OpenRouter API 테스트'
             )}
           </button>
           
@@ -269,7 +288,7 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
       {testResult && (
         <div className="space-y-4 fade-in">
           <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">OpenAI API 테스트 결과</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">OpenRouter API 테스트 결과</h3>
             
             <div className={`p-4 rounded-lg ${
               testResult.success 
@@ -296,10 +315,21 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
               {testResult.response && (
                 <div className="mt-3">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    OpenAI 응답:
+                    LLM 응답:
                   </label>
-                  <div className="code-block bg-white">
+                  <div className="code-block bg-white max-h-96 overflow-y-auto">
                     {testResult.response}
+                  </div>
+                </div>
+              )}
+              
+              {testResult.prompt && (
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    테스트 프롬프트:
+                  </label>
+                  <div className="code-block bg-white max-h-32 overflow-y-auto">
+                    {testResult.prompt}
                   </div>
                 </div>
               )}
@@ -336,7 +366,7 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
                   복사
                 </button>
               </div>
-              <div className="code-block">
+              <div className="code-block max-h-96 overflow-y-auto">
                 {result.content}
               </div>
             </div>

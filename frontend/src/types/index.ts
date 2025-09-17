@@ -125,3 +125,14 @@ export interface SearchResponse {
   records: VerificationRecord[];
   total: number;
 }
+
+// 테스트 관련 타입 정의
+export interface TestResponse {
+  success: boolean;
+  message: string;
+  response?: string;
+  error?: string;
+  prompt?: string;
+  model?: string;
+  provider?: string;
+}
