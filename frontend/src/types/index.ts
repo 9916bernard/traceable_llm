@@ -22,7 +22,6 @@ export interface LLMResponse {
   request_id: string;
   content: string;
   hash_value: string;
-  verification_record_id: number;
   response_time: number;
   model: string;
   provider: string;
@@ -71,6 +70,11 @@ export interface VerificationResponse {
     etherscan_url?: string;
     error_message?: string;
   };
+  origin_verification?: {
+    from_address: string;
+    our_official_address: string;
+    origin_verified: boolean;
+  };
   message: string;
 }
 
@@ -89,7 +93,10 @@ export interface BlockchainStatus {
 
 export interface BlockchainCommitRequest {
   hash_value: string;
-  verification_record_id: number;
+  prompt?: string;
+  response?: string;
+  llm_provider?: string;
+  model_name?: string;
 }
 
 export interface BlockchainCommitResponse {

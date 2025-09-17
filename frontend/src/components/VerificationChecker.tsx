@@ -138,6 +138,60 @@ export default function VerificationChecker() {
               </div>
             </div>
 
+            {/* 출처 검증 정보 */}
+            {result.origin_verification && (
+              <div className="mb-6">
+                <h4 className="font-medium text-gray-900 mb-3">출처 검증</h4>
+                <div className={`px-4 py-3 rounded-lg border ${
+                  result.origin_verification.origin_verified
+                    ? 'bg-green-50 border-green-200'
+                    : 'bg-red-50 border-red-200'
+                }`}>
+                  <div className="flex items-center space-x-2 mb-3">
+                    <span className="text-lg">
+                      {result.origin_verification.origin_verified ? '🏠' : '⚠️'}
+                    </span>
+                    <span className={`font-semibold ${
+                      result.origin_verification.origin_verified ? 'text-green-800' : 'text-red-800'
+                    }`}>
+                      {result.origin_verification.origin_verified 
+                        ? '우리 웹사이트 출처' 
+                        : '다른 출처'
+                      }
+                    </span>
+                  </div>
+                  
+                  {/* 주소 비교 정보 */}
+                  <div className="p-3 bg-white rounded border text-xs">
+                    <div className="space-y-1">
+                      <div>
+                        <span className="font-medium text-gray-600">Etherscan From 주소:</span>
+                        <span className="ml-2 font-mono text-gray-800">
+                          {result.origin_verification.from_address}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-600">우리 공식 주소:</span>
+                        <span className="ml-2 font-mono text-gray-800">
+                          {result.origin_verification.our_official_address}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium text-gray-600">주소 일치:</span>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          result.origin_verification.origin_verified
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {result.origin_verification.origin_verified ? '일치' : '불일치'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* 트랜잭션 정보 */}
             <div className="space-y-4">
               <h4 className="font-medium text-gray-900">트랜잭션 정보</h4>

@@ -3,9 +3,6 @@ import time
 import uuid
 import os
 from typing import Dict, Any, Optional
-from datetime import datetime
-from app.models.llm_request import LLMRequest
-from app import db
 
 class LLMService:
     """LLM API 호출 서비스 - OpenRouter 통합"""
@@ -51,30 +48,11 @@ class LLMService:
         request_id = str(uuid.uuid4())
         start_time = time.time()
         
-        # 요청 로그 생성
-        llm_request = LLMRequest(
-            request_id=request_id,
-            llm_provider=provider,
-            model_name=model,
-            prompt=prompt,
-            parameters=parameters,
-            status='pending'
-        )
-        db.session.add(llm_request)
-        db.session.commit()
-        
         try:
             # OpenRouter를 통한 API 호출
             response = self._call_openrouter(provider, prompt, parameters)
             
             response_time = time.time() - start_time
-            
-            # 요청 로그 업데이트
-            llm_request.response = response['content']
-            llm_request.response_time = response_time
-            llm_request.status = 'success'
-            llm_request.updated_at = datetime.utcnow()
-            db.session.commit()
             
             return {
                 'request_id': request_id,
@@ -86,15 +64,6 @@ class LLMService:
             }
             
         except Exception as e:
-            response_time = time.time() - start_time
-            
-            # 에러 로그 업데이트
-            llm_request.response_time = response_time
-            llm_request.status = 'error'
-            llm_request.error_message = str(e)
-            llm_request.updated_at = datetime.utcnow()
-            db.session.commit()
-            
             raise e
     
     def _call_openrouter(self, provider: str, prompt: str, parameters: Dict[str, Any]) -> Dict[str, Any]:

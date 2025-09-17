@@ -1,9 +1,6 @@
 from flask import Blueprint, request, jsonify
-from app.models.verification_record import VerificationRecord
 from app.services.blockchain_service import BlockchainService
-from app import db
 from config import Config
-from datetime import datetime
 
 verification_bp = Blueprint('verification', __name__)
 
@@ -30,92 +27,31 @@ def verify_hash():
         # 트랜잭션 해시 검증
         verification_result = blockchain_service.verify_transaction_hash(hash_value)
         
-        verified = verification_result.get('exists', False) and verification_result.get('is_success', False)
+        # 기본 검증 (트랜잭션 존재 및 성공 여부)
+        basic_verified = verification_result.get('exists', False) and verification_result.get('is_success', False)
+        
+        # 출처 검증 (from 주소가 우리 공식 주소와 일치하는지 확인)
+        from_address = verification_result.get('from_address', '')
+        our_official_address = "0xaCE2981d41Dce58E6e27a3A04621194Eca44ea65"
+        our_official_address_lower = our_official_address.lower()  # UI 표시용 소문자 주소
+        origin_verified = from_address.lower() == our_official_address_lower if from_address else False
+        
+        # 최종 검증 (기본 검증과 출처 검증 모두 통과해야 함)
+        verified = basic_verified and origin_verified
         
         return jsonify({
             'verified': verified,
             'transaction_hash': hash_value,
             'blockchain_info': verification_result,
-            'message': '검증 완료' if verified else '트랜잭션을 찾을 수 없거나 실패했습니다'
+            'origin_verification': {
+                'from_address': from_address,
+                'our_official_address': our_official_address_lower,  # UI에 소문자로 표시
+                'origin_verified': origin_verified
+            },
+            'message': '검증 완료' if verified else '트랜잭션을 찾을 수 없거나 출처가 일치하지 않습니다'
         }), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@verification_bp.route('/record/<int:record_id>', methods=['GET'])
-def get_verification_record(record_id):
-    """
-    특정 검증 기록 조회
-    """
-    try:
-        verification_record = VerificationRecord.query.get_or_404(record_id)
-        return jsonify(verification_record.to_dict()), 200
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@verification_bp.route('/records', methods=['GET'])
-def list_verification_records():
-    """
-    검증 기록 목록 조회
-    """
-    try:
-        page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', 20, type=int)
-        provider = request.args.get('provider')
-        verified = request.args.get('verified')
-        
-        query = VerificationRecord.query
-        
-        if provider:
-            query = query.filter_by(llm_provider=provider)
-        
-        if verified is not None:
-            query = query.filter_by(verified=verified.lower() == 'true')
-        
-        records = query.order_by(VerificationRecord.created_at.desc()).paginate(
-            page=page, per_page=per_page, error_out=False
-        )
-        
-        return jsonify({
-            'records': [record.to_dict() for record in records.items],
-            'total': records.total,
-            'pages': records.pages,
-            'current_page': page,
-            'per_page': per_page
-        }), 200
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@verification_bp.route('/search', methods=['POST'])
-def search_by_content():
-    """
-    내용으로 검증 기록 검색
-    """
-    try:
-        data = request.get_json()
-        
-        if 'query' not in data:
-            return jsonify({'error': '검색 쿼리가 필요합니다'}), 400
-        
-        query = data['query']
-        search_type = data.get('type', 'both')  # 'prompt', 'response', 'both'
-        
-        search_query = VerificationRecord.query
-        
-        if search_type in ['prompt', 'both']:
-            search_query = search_query.filter(VerificationRecord.prompt.contains(query))
-        
-        if search_type in ['response', 'both']:
-            search_query = search_query.filter(VerificationRecord.response.contains(query))
-        
-        records = search_query.order_by(VerificationRecord.created_at.desc()).limit(50).all()
-        
-        return jsonify({
-            'records': [record.to_dict() for record in records],
-            'total': len(records)
-        }), 200
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+# DB 관련 엔드포인트들은 Etherscan 전용 시스템에서는 불필요하므로 제거됨

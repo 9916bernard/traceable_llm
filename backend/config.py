@@ -6,8 +6,6 @@ load_dotenv()
 class Config:
     """기본 설정 클래스"""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'postgresql://user:password@localhost/llm_verification'
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # LLM API 설정
     OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
@@ -25,7 +23,6 @@ class Config:
 class DevelopmentConfig(Config):
     """개발 환경 설정"""
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or 'postgresql://user:password@localhost/llm_verification_dev'
 
 class ProductionConfig(Config):
     """프로덕션 환경 설정"""
@@ -34,7 +31,6 @@ class ProductionConfig(Config):
 class TestingConfig(Config):
     """테스트 환경 설정"""
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
 
 config = {
     'development': DevelopmentConfig,

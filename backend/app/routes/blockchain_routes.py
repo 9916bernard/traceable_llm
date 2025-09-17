@@ -42,30 +42,15 @@ def verify_hash_on_blockchain(hash_value):
                 'error': '블록체인 설정이 완료되지 않았습니다'
             }), 400
         
-        # 데이터베이스에서 먼저 확인
-        from app.models.verification_record import VerificationRecord
-        verification_record = VerificationRecord.query.filter_by(hash_value=hash_value).first()
+        # Etherscan에서 직접 확인
+        blockchain_service = BlockchainService(
+            Config.ETHEREUM_RPC_URL,
+            Config.PRIVATE_KEY,
+            Config.CONTRACT_ADDRESS
+        )
         
-        if verification_record and verification_record.verified and verification_record.transaction_hash:
-            # 데이터베이스에 검증된 기록이 있으면 성공으로 처리
-            return jsonify({
-                'exists': True,
-                'timestamp': int(verification_record.timestamp.timestamp()),
-                'submitter': '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',  # Hardhat 기본 계정
-                'status': 'success',
-                'transaction_hash': verification_record.transaction_hash,
-                'block_number': verification_record.block_number
-            }), 200
-        else:
-            # 데이터베이스에 없으면 블록체인에서 확인 시도
-            blockchain_service = BlockchainService(
-                Config.ETHEREUM_RPC_URL,
-                Config.PRIVATE_KEY,
-                Config.CONTRACT_ADDRESS
-            )
-            
-            result = blockchain_service.verify_hash(hash_value)
-            return jsonify(result), 200
+        result = blockchain_service.verify_hash(hash_value)
+        return jsonify(result), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -78,9 +63,9 @@ def commit_hash_to_blockchain():
     try:
         data = request.get_json()
         
-        if 'hash_value' not in data or 'verification_record_id' not in data:
+        if 'hash_value' not in data:
             return jsonify({
-                'error': '해시값과 검증 기록 ID가 필요합니다'
+                'error': '해시값이 필요합니다'
             }), 400
         
         if not Config.CONTRACT_ADDRESS:
@@ -96,7 +81,10 @@ def commit_hash_to_blockchain():
         
         result = blockchain_service.commit_hash(
             data['hash_value'],
-            data['verification_record_id']
+            data.get('prompt', ''),
+            data.get('response', ''),
+            data.get('llm_provider', ''),
+            data.get('model_name', '')
         )
         
         return jsonify(result), 200

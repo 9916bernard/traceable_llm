@@ -3,8 +3,6 @@ from datetime import datetime
 from app.services.llm_service import LLMService
 from app.services.hash_service import HashService
 from app.services.blockchain_service import BlockchainService
-from app.models.verification_record import VerificationRecord
-from app import db
 from config import Config
 
 llm_bp = Blueprint('llm', __name__)
@@ -44,24 +42,10 @@ def generate_with_verification():
             timestamp=datetime.utcnow()
         )
         
-        # 검증 기록 생성
-        verification_record = VerificationRecord(
-            hash_value=hash_value,
-            llm_provider=provider,
-            model_name=model,
-            prompt=prompt,
-            response=llm_response['content'],
-            parameters=parameters,
-            timestamp=datetime.utcnow()
-        )
-        db.session.add(verification_record)
-        db.session.commit()
-        
         result = {
             'request_id': llm_response['request_id'],
             'content': llm_response['content'],
             'hash_value': hash_value,
-            'verification_record_id': verification_record.id,
             'response_time': llm_response['response_time'],
             'model': model,
             'provider': provider
@@ -79,8 +63,7 @@ def generate_with_verification():
                 prompt, 
                 llm_response['content'], 
                 provider, 
-                model, 
-                verification_record.id
+                model
             )
             result['blockchain_commit'] = commit_result
             

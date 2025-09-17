@@ -3,8 +3,6 @@ import json
 import requests
 import os
 from typing import Dict, Any, Optional
-from app import db
-from app.models.verification_record import VerificationRecord
 from config import Config
 
 class BlockchainService:
@@ -194,7 +192,7 @@ class BlockchainService:
             abi=self.contract_abi
         )
     
-    def commit_hash(self, hash_value: str, prompt: str, response: str, llm_provider: str, model_name: str, verification_record_id: int) -> Dict[str, Any]:
+    def commit_hash(self, hash_value: str, prompt: str, response: str, llm_provider: str, model_name: str) -> Dict[str, Any]:
         """
         LLM 기록을 블록체인에 커밋
         
@@ -204,7 +202,6 @@ class BlockchainService:
             response: LLM 응답
             llm_provider: LLM 제공자
             model_name: 모델명
-            verification_record_id: 검증 기록 ID
         
         Returns:
             Dict: 트랜잭션 정보
@@ -261,19 +258,7 @@ class BlockchainService:
             # 트랜잭션 영수증 대기
             tx_receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
             
-            # 검증 기록 업데이트 (Flask 앱 컨텍스트 내에서만)
-            try:
-                from flask import current_app
-                with current_app.app_context():
-                    verification_record = VerificationRecord.query.get(verification_record_id)
-                    if verification_record:
-                        verification_record.transaction_hash = tx_hash.hex()
-                        verification_record.block_number = tx_receipt.blockNumber
-                        verification_record.verified = True
-                        db.session.commit()
-            except Exception as db_error:
-                # 데이터베이스 업데이트 실패는 트랜잭션 성공에 영향을 주지 않음
-                print(f"Database update failed: {db_error}")
+            # DB 업데이트 로직 제거됨 - Etherscan 전용 시스템
             
             return {
                 'transaction_hash': tx_hash.hex(),

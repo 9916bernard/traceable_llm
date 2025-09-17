@@ -4,13 +4,9 @@ import {
   LLMResponse,
   VerificationRequest,
   VerificationResponse,
-  VerificationRecord,
   BlockchainStatus,
   BlockchainCommitRequest,
   BlockchainCommitResponse,
-  SearchRequest,
-  SearchResponse,
-  PaginatedResponse,
   TestResponse,
 } from '@/types';
 
@@ -78,31 +74,6 @@ export const verificationApi = {
   // 해시 검증
   verify: async (request: VerificationRequest): Promise<VerificationResponse> => {
     const response: AxiosResponse<VerificationResponse> = await api.post('/verification/verify', request);
-    return response.data;
-  },
-
-  // 검증 기록 조회
-  getRecord: async (recordId: number): Promise<VerificationRecord> => {
-    const response: AxiosResponse<VerificationRecord> = await api.get(`/verification/record/${recordId}`);
-    return response.data;
-  },
-
-  // 검증 기록 목록 조회
-  getRecords: async (params?: {
-    page?: number;
-    per_page?: number;
-    provider?: string;
-    verified?: boolean;
-  }): Promise<PaginatedResponse<VerificationRecord>> => {
-    const response: AxiosResponse<PaginatedResponse<VerificationRecord>> = await api.get('/verification/records', {
-      params,
-    });
-    return response.data;
-  },
-
-  // 내용으로 검색
-  search: async (request: SearchRequest): Promise<SearchResponse> => {
-    const response: AxiosResponse<SearchResponse> = await api.post('/verification/search', request);
     return response.data;
   },
 };
