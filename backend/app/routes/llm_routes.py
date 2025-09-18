@@ -3,9 +3,58 @@ from datetime import datetime
 from app.services.llm_service import LLMService
 from app.services.hash_service import HashService
 from app.services.blockchain_service import BlockchainService
+from app.services.prompt_filter_service import PromptFilterService
 from config import Config
 
 llm_bp = Blueprint('llm', __name__)
+
+@llm_bp.route('/filter-prompt', methods=['POST'])
+def filter_prompt():
+    """
+    프롬프트 전처리 필터링
+    """
+    try:
+        data = request.get_json()
+        
+        if not data or 'prompt' not in data:
+            return jsonify({'error': '프롬프트가 필요합니다'}), 400
+        
+        prompt = data['prompt']
+        
+        if not prompt or not prompt.strip():
+            return jsonify({'error': '빈 프롬프트입니다'}), 400
+        
+        # 프롬프트 필터링 서비스 호출
+        filter_service = PromptFilterService()
+        filter_result = filter_service.filter_prompt(prompt)
+        
+        if not filter_result['is_appropriate']:
+            # 부적절한 프롬프트인 경우 거부 메시지 반환
+            rejection_message = filter_service.get_rejection_message(
+                filter_result['category'], 
+                filter_result['reason']
+            )
+            
+            return jsonify({
+                'success': False,
+                'filtered': True,
+                'category': filter_result['category'],
+                'reason': filter_result['reason'],
+                'message': rejection_message,
+                'confidence': filter_result['confidence']
+            }), 200
+        
+        # 적절한 프롬프트인 경우 승인
+        return jsonify({
+            'success': True,
+            'filtered': False,
+            'category': filter_result['category'],
+            'message': '프롬프트가 적합합니다. 해당 프롬프트와 아웃풋을 커밋하시겠습니까?',
+            'confidence': filter_result['confidence']
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @llm_bp.route('/generate', methods=['POST'])
 def generate_with_verification():
@@ -113,10 +162,7 @@ def test_openrouter_connection():
             provider=provider,
             model=model,
             prompt=test_prompt,
-            parameters={
-                'temperature': 0.7,
-                'max_tokens': 500
-            }
+            parameters={}
         )
         
         return jsonify({
@@ -148,7 +194,7 @@ def health_check():
             provider='openai',
             model='gpt-5-mini',
             prompt='Hello',
-            parameters={'max_tokens': 10}
+            parameters={}
         )
         
         return jsonify({

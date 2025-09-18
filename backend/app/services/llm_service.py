@@ -85,8 +85,8 @@ class LLMService:
             "messages": [
                 {"role": "user", "content": prompt}
             ],
-            "temperature": parameters.get('temperature', 0.7),
-            "max_tokens": parameters.get('max_tokens', 2000)
+            "temperature": 0.2,
+            "max_tokens": 200
         }
         
         try:

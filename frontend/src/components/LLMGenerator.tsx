@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useMutation } from 'react-query';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import { LLMRequest, LLMResponse, TestResponse } from '@/types';
+import { LLMRequest, LLMResponse, TestResponse, PromptFilterResponse } from '@/types';
 import { llmApi } from '@/services/api';
 import { formatResponseTime, copyToClipboard, getEtherscanUrl } from '@/utils';
 
@@ -14,9 +14,6 @@ interface FormData {
   provider: string;
   model: string;
   prompt: string;
-  temperature: number;
-  max_tokens: number;
-  commit_to_blockchain: boolean;
 }
 
 export default function LLMGenerator({ models }: LLMGeneratorProps) {
@@ -24,6 +21,9 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [testResult, setTestResult] = useState<TestResponse | null>(null);
   const [isTesting, setIsTesting] = useState(false);
+  const [filterResult, setFilterResult] = useState<PromptFilterResponse | null>(null);
+  const [isFiltering, setIsFiltering] = useState(false);
+  const [showCommitButton, setShowCommitButton] = useState(false);
 
   const {
     register,
@@ -35,9 +35,6 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
     defaultValues: {
       provider: 'openai',
       model: 'gpt-5-mini',
-      temperature: 0.7,
-      max_tokens: 2000,
-      commit_to_blockchain: true,
     },
   });
 
@@ -60,6 +57,42 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
       setIsGenerating(false);
     },
   });
+
+  // 프롬프트 필터링 뮤테이션
+  const filterMutation = useMutation(
+    (prompt: string) => llmApi.filterPrompt({ prompt }),
+    {
+      onMutate: () => {
+        setIsFiltering(true);
+        setFilterResult(null);
+        setShowCommitButton(false);
+      },
+      onSuccess: (data) => {
+        setFilterResult(data);
+        if (data.success && !data.filtered) {
+          setShowCommitButton(true);
+          toast.success('프롬프트가 적합합니다!');
+        } else {
+          setShowCommitButton(false);
+          toast.error(data.message);
+        }
+      },
+      onError: (error: any) => {
+        const errorMessage = error.response?.data?.error || error.message;
+        setFilterResult({
+          success: false,
+          filtered: true,
+          message: `필터링 오류: ${errorMessage}`,
+          error: errorMessage
+        });
+        setShowCommitButton(false);
+        toast.error(`필터링 실패: ${errorMessage}`);
+      },
+      onSettled: () => {
+        setIsFiltering(false);
+      },
+    }
+  );
 
   // OpenRouter API 테스트 뮤테이션
   const testMutation = useMutation(
@@ -99,10 +132,10 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
       model: data.model,
       prompt: data.prompt,
       parameters: {
-        temperature: data.temperature,
-        max_tokens: data.max_tokens,
+        temperature: 0.2,
+        max_tokens: 200,
       },
-      commit_to_blockchain: data.commit_to_blockchain,
+      commit_to_blockchain: true,
     };
 
     generateMutation.mutate(request);
@@ -134,155 +167,233 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
     <div className="space-y-6">
       {/* 입력 폼 */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* LLM 제공자 선택 */}
-          <div>
-            <label className="label">LLM 제공자</label>
-            <select
-              {...register('provider', { required: 'LLM 제공자를 선택해주세요' })}
-              className="select"
-            >
-              {models && Object.keys(models).map((provider) => (
-                <option key={provider} value={provider}>
-                  {provider === 'openai' ? 'OpenAI' : 
-                   provider === 'grok' ? 'Llama' :
-                   provider === 'claude' ? 'Claude' :
-                   provider === 'gemini' ? 'Gemini' :
-                   provider === 'deepseek' ? 'DeepSeek' : provider}
-                </option>
-              ))}
-            </select>
-            {errors.provider && (
-              <p className="mt-1 text-sm text-error-600">{errors.provider.message}</p>
-            )}
-          </div>
-
-          {/* 모델 선택 */}
-          <div>
-            <label className="label">모델</label>
-            <select
-              {...register('model', { required: '모델을 선택해주세요' })}
-              className="select"
-            >
-              {models && models[selectedProvider]?.map((model) => (
-                <option key={model} value={model}>
-                  {model}
-                </option>
-              ))}
-            </select>
-            {errors.model && (
-              <p className="mt-1 text-sm text-error-600">{errors.model.message}</p>
-            )}
-          </div>
-        </div>
-
         {/* 프롬프트 입력 */}
         <div>
           <label className="label">프롬프트</label>
           <textarea
             {...register('prompt', { required: '프롬프트를 입력해주세요' })}
             rows={4}
-            className="textarea"
+            className={`textarea ${showCommitButton ? 'bg-gray-50 cursor-not-allowed' : ''}`}
             placeholder="LLM에게 전달할 프롬프트를 입력하세요..."
+            disabled={showCommitButton}
           />
           {errors.prompt && (
             <p className="mt-1 text-sm text-error-600">{errors.prompt.message}</p>
           )}
         </div>
 
-        {/* 파라미터 설정 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="label">Temperature ({watch('temperature')})</label>
-            <input
-              type="range"
-              min="0"
-              max="2"
-              step="0.1"
-              {...register('temperature', { valueAsNumber: true })}
-              className="w-full"
-            />
-          </div>
+        {/* LLM 설정 섹션 - 필터 통과 후에만 표시 */}
+        {showCommitButton && (
+          <div className="border-t pt-6 space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">LLM 설정</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* LLM 제공자 선택 */}
+              <div>
+                <label className="label">LLM 제공자</label>
+                <select
+                  {...register('provider', { required: 'LLM 제공자를 선택해주세요' })}
+                  className="select"
+                >
+                  {models && Object.keys(models).map((provider) => (
+                    <option key={provider} value={provider}>
+                      {provider === 'openai' ? 'OpenAI' : 
+                       provider === 'grok' ? 'Llama' :
+                       provider === 'claude' ? 'Claude' :
+                       provider === 'gemini' ? 'Gemini' :
+                       provider === 'deepseek' ? 'DeepSeek' : provider}
+                    </option>
+                  ))}
+                </select>
+                {errors.provider && (
+                  <p className="mt-1 text-sm text-error-600">{errors.provider.message}</p>
+                )}
+              </div>
 
-          <div>
-            <label className="label">Max Tokens</label>
-            <input
-              type="number"
-              min="1"
-              max="8000"
-              {...register('max_tokens', { valueAsNumber: true })}
-              className="input"
-            />
+              {/* 모델 선택 */}
+              <div>
+                <label className="label">모델</label>
+                <select
+                  {...register('model', { required: '모델을 선택해주세요' })}
+                  className="select"
+                >
+                  {models && models[selectedProvider]?.map((model) => (
+                    <option key={model} value={model}>
+                      {model}
+                    </option>
+                  ))}
+                </select>
+                {errors.model && (
+                  <p className="mt-1 text-sm text-error-600">{errors.model.message}</p>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* 블록체인 커밋 옵션 */}
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            {...register('commit_to_blockchain')}
-            className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-          />
-          <label className="ml-2 block text-sm text-gray-900">
-            블록체인에 해시 커밋
-          </label>
-        </div>
 
         {/* 제출 버튼 */}
         <div className="flex justify-between">
-          <button
-            type="button"
-            onClick={() => {
-              const currentData = watch();
-              if (!currentData.prompt) {
-                toast.error('테스트를 위해 프롬프트를 입력해주세요');
-                return;
-              }
-              testMutation.mutate({
-                prompt: currentData.prompt,
-                provider: currentData.provider,
-                model: currentData.model
-              });
-            }}
-            className="btn-outline"
-            disabled={isTesting || isGenerating}
-          >
-            {isTesting ? (
-              <div className="flex items-center space-x-2">
-                <div className="loading-spinner" />
-                <span>테스트 중...</span>
-              </div>
-            ) : (
-              'OpenRouter API 테스트'
-            )}
-          </button>
+          {!showCommitButton ? (
+            <button
+              type="button"
+              onClick={() => {
+                const currentData = watch();
+                if (!currentData.prompt) {
+                  toast.error('테스트를 위해 프롬프트를 입력해주세요');
+                  return;
+                }
+                testMutation.mutate({
+                  prompt: currentData.prompt,
+                  provider: currentData.provider,
+                  model: currentData.model
+                });
+              }}
+              className="btn-outline"
+              disabled={isTesting || isGenerating || isFiltering}
+            >
+              {isTesting ? (
+                <div className="flex items-center space-x-2">
+                  <div className="loading-spinner" />
+                  <span>테스트 중...</span>
+                </div>
+              ) : (
+                'OpenRouter API 테스트'
+              )}
+            </button>
+          ) : (
+            <div className="text-sm text-gray-500 flex items-center">
+              <span className="mr-2">✓</span>
+              프롬프트가 승인되었습니다. 다른 프롬프트를 사용하려면 초기화 버튼을 클릭하세요.
+            </div>
+          )}
           
           <div className="flex space-x-3">
             <button
               type="button"
-              onClick={() => reset()}
+              onClick={() => {
+                reset();
+                setFilterResult(null);
+                setShowCommitButton(false);
+              }}
               className="btn-outline"
-              disabled={isGenerating || isTesting}
+              disabled={isGenerating || isTesting || isFiltering}
             >
-              초기화
+              {showCommitButton ? '새 프롬프트 입력' : '초기화'}
             </button>
-            <button
-              type="submit"
-              className="btn-primary"
-              disabled={isGenerating || isTesting}
-            >
-              {isGenerating ? (
-                <div className="flex items-center space-x-2">
-                  <div className="loading-spinner" />
-                  <span>생성 중...</span>
-                </div>
-              ) : (
-                'LLM 응답 생성'
-              )}
-            </button>
+            
+            {!showCommitButton ? (
+              <button
+                type="button"
+                onClick={() => {
+                  const currentData = watch();
+                  if (!currentData.prompt) {
+                    toast.error('프롬프트를 입력해주세요');
+                    return;
+                  }
+                  filterMutation.mutate(currentData.prompt);
+                }}
+                className="btn-primary"
+                disabled={isGenerating || isTesting || isFiltering}
+              >
+                {isFiltering ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="loading-spinner" />
+                    <span>필터링 중...</span>
+                  </div>
+                ) : (
+                  '프롬프트 필터링'
+                )}
+              </button>
+            ) : (
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={isGenerating || isTesting || isFiltering}
+              >
+                {isGenerating ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="loading-spinner" />
+                    <span>생성 중...</span>
+                  </div>
+                ) : (
+                  'LLM 응답 생성'
+                )}
+              </button>
+            )}
           </div>
         </div>
       </form>
+
+      {/* 프롬프트 필터링 결과 표시 */}
+      {filterResult && (
+        <div className="space-y-4 fade-in">
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">프롬프트 필터링 결과</h3>
+            
+            <div className={`p-4 rounded-lg ${
+              filterResult.success && !filterResult.filtered
+                ? 'bg-green-50 border border-green-200' 
+                : 'bg-red-50 border border-red-200'
+            }`}>
+              <div className="flex items-center space-x-2 mb-2">
+                <span className={`w-3 h-3 rounded-full ${
+                  filterResult.success && !filterResult.filtered ? 'bg-green-500' : 'bg-red-500'
+                }`} />
+                <span className={`font-medium ${
+                  filterResult.success && !filterResult.filtered ? 'text-green-800' : 'text-red-800'
+                }`}>
+                  {filterResult.success && !filterResult.filtered ? '프롬프트 승인' : '프롬프트 거부'}
+                </span>
+                {filterResult.category && (
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    filterResult.category === 'APPROPRIATE' 
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {filterResult.category}
+                  </span>
+                )}
+              </div>
+              
+              <p className={`text-sm ${
+                filterResult.success && !filterResult.filtered ? 'text-green-700' : 'text-red-700'
+              }`}>
+                {filterResult.message}
+              </p>
+              
+              {filterResult.reason && (
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    필터링 이유:
+                  </label>
+                  <div className="text-sm text-gray-600">
+                    {filterResult.reason}
+                  </div>
+                </div>
+              )}
+              
+              {filterResult.confidence && (
+                <div className="mt-2">
+                  <span className="text-sm text-gray-600">
+                    신뢰도: {(filterResult.confidence * 100).toFixed(1)}%
+                  </span>
+                </div>
+              )}
+              
+              {filterResult.error && (
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    오류 메시지:
+                  </label>
+                  <div className="code-block bg-white text-red-600">
+                    {filterResult.error}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 테스트 결과 표시 */}
       {testResult && (
