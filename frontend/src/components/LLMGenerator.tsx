@@ -19,8 +19,6 @@ interface FormData {
 export default function LLMGenerator({ models }: LLMGeneratorProps) {
   const [result, setResult] = useState<LLMResponse | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [testResult, setTestResult] = useState<TestResponse | null>(null);
-  const [isTesting, setIsTesting] = useState(false);
   const [filterResult, setFilterResult] = useState<PromptFilterResponse | null>(null);
   const [isFiltering, setIsFiltering] = useState(false);
   const [showCommitButton, setShowCommitButton] = useState(false);
@@ -48,10 +46,10 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
     },
     onSuccess: (data) => {
       setResult(data);
-      toast.success('LLM 응답이 생성되었습니다!');
+      toast.success('LLM response has been generated!');
     },
     onError: (error: any) => {
-      toast.error(`생성 실패: ${error.response?.data?.error || error.message}`);
+      toast.error(`Generation failed: ${error.response?.data?.error || error.message}`);
     },
     onSettled: () => {
       setIsGenerating(false);
@@ -71,7 +69,7 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
         setFilterResult(data);
         if (data.success && !data.filtered) {
           setShowCommitButton(true);
-          toast.success('프롬프트가 적합합니다!');
+          toast.success('Prompt is appropriate!');
         } else {
           setShowCommitButton(false);
           toast.error(data.message);
@@ -82,11 +80,11 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
         setFilterResult({
           success: false,
           filtered: true,
-          message: `필터링 오류: ${errorMessage}`,
+          message: `Filtering error: ${errorMessage}`,
           error: errorMessage
         });
         setShowCommitButton(false);
-        toast.error(`필터링 실패: ${errorMessage}`);
+        toast.error(`Filtering failed: ${errorMessage}`);
       },
       onSettled: () => {
         setIsFiltering(false);
@@ -94,37 +92,6 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
     }
   );
 
-  // OpenRouter API 테스트 뮤테이션
-  const testMutation = useMutation(
-    (testData: { prompt: string; provider: string; model: string }) => 
-      llmApi.testConnection(testData),
-    {
-      onMutate: () => {
-        setIsTesting(true);
-        setTestResult(null);
-      },
-      onSuccess: (data) => {
-        setTestResult(data);
-        if (data.success) {
-          toast.success('OpenRouter API 연결 성공!');
-        } else {
-          toast.error(`API 연결 실패: ${data.message}`);
-        }
-      },
-      onError: (error: any) => {
-        const errorMessage = error.response?.data?.error || error.message;
-        setTestResult({
-          success: false,
-          message: 'API 연결 실패',
-          error: errorMessage
-        });
-        toast.error(`API 연결 실패: ${errorMessage}`);
-      },
-      onSettled: () => {
-        setIsTesting(false);
-      },
-    }
-  );
 
   const onSubmit = (data: FormData) => {
     const request: LLMRequest = {
@@ -169,12 +136,12 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* 프롬프트 입력 */}
         <div>
-          <label className="label">프롬프트</label>
+          <label className="label">Prompt</label>
           <textarea
-            {...register('prompt', { required: '프롬프트를 입력해주세요' })}
+            {...register('prompt', { required: 'Please enter a prompt' })}
             rows={4}
             className={`textarea ${showCommitButton ? 'bg-gray-50 cursor-not-allowed' : ''}`}
-            placeholder="LLM에게 전달할 프롬프트를 입력하세요..."
+            placeholder="Enter a prompt to send to the LLM..."
             disabled={showCommitButton}
           />
           {errors.prompt && (
@@ -185,13 +152,13 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
         {/* LLM 설정 섹션 - 필터 통과 후에만 표시 */}
         {showCommitButton && (
           <div className="border-t pt-6 space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900">LLM 설정</h3>
+            <h3 className="text-lg font-semibold text-gray-900">LLM Settings</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* LLM 제공자 선택 */}
               <div>
-                <label className="label">LLM 제공자</label>
+                <label className="label">LLM Provider</label>
                 <select
-                  {...register('provider', { required: 'LLM 제공자를 선택해주세요' })}
+                  {...register('provider', { required: 'Please select an LLM provider' })}
                   className="select"
                 >
                   {models && Object.keys(models).map((provider) => (
@@ -211,9 +178,9 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
 
               {/* 모델 선택 */}
               <div>
-                <label className="label">모델</label>
+                <label className="label">Model</label>
                 <select
-                  {...register('model', { required: '모델을 선택해주세요' })}
+                  {...register('model', { required: 'Please select a model' })}
                   className="select"
                 >
                   {models && models[selectedProvider]?.map((model) => (
@@ -234,36 +201,13 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
         {/* 제출 버튼 */}
         <div className="flex justify-between">
           {!showCommitButton ? (
-            <button
-              type="button"
-              onClick={() => {
-                const currentData = watch();
-                if (!currentData.prompt) {
-                  toast.error('테스트를 위해 프롬프트를 입력해주세요');
-                  return;
-                }
-                testMutation.mutate({
-                  prompt: currentData.prompt,
-                  provider: currentData.provider,
-                  model: currentData.model
-                });
-              }}
-              className="btn-outline"
-              disabled={isTesting || isGenerating || isFiltering}
-            >
-              {isTesting ? (
-                <div className="flex items-center space-x-2">
-                  <div className="loading-spinner" />
-                  <span>테스트 중...</span>
-                </div>
-              ) : (
-                'OpenRouter API 테스트'
-              )}
-            </button>
+            <div className="text-sm text-gray-500">
+              Please enter a prompt and proceed with filtering.
+            </div>
           ) : (
             <div className="text-sm text-gray-500 flex items-center">
               <span className="mr-2">✓</span>
-              프롬프트가 승인되었습니다. 다른 프롬프트를 사용하려면 초기화 버튼을 클릭하세요.
+              Prompt has been approved. Click the reset button to use a different prompt.
             </div>
           )}
           
@@ -276,9 +220,9 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
                 setShowCommitButton(false);
               }}
               className="btn-outline"
-              disabled={isGenerating || isTesting || isFiltering}
+              disabled={isGenerating || isFiltering}
             >
-              {showCommitButton ? '새 프롬프트 입력' : '초기화'}
+              {showCommitButton ? 'New Prompt' : 'Reset'}
             </button>
             
             {!showCommitButton ? (
@@ -287,36 +231,36 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
                 onClick={() => {
                   const currentData = watch();
                   if (!currentData.prompt) {
-                    toast.error('프롬프트를 입력해주세요');
+                    toast.error('Please enter a prompt');
                     return;
                   }
                   filterMutation.mutate(currentData.prompt);
                 }}
                 className="btn-primary"
-                disabled={isGenerating || isTesting || isFiltering}
+                disabled={isGenerating || isFiltering}
               >
                 {isFiltering ? (
                   <div className="flex items-center space-x-2">
                     <div className="loading-spinner" />
-                    <span>필터링 중...</span>
+                    <span>Filtering...</span>
                   </div>
                 ) : (
-                  '프롬프트 필터링'
+                  'Filter Prompt'
                 )}
               </button>
             ) : (
               <button
                 type="submit"
                 className="btn-primary"
-                disabled={isGenerating || isTesting || isFiltering}
+                disabled={isGenerating || isFiltering}
               >
                 {isGenerating ? (
                   <div className="flex items-center space-x-2">
                     <div className="loading-spinner" />
-                    <span>생성 중...</span>
+                    <span>Generating...</span>
                   </div>
                 ) : (
-                  'LLM 응답 생성'
+                  'Generate LLM Response'
                 )}
               </button>
             )}
@@ -328,7 +272,7 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
       {filterResult && (
         <div className="space-y-4 fade-in">
           <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">프롬프트 필터링 결과</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Prompt Filtering Result</h3>
             
             <div className={`p-4 rounded-lg ${
               filterResult.success && !filterResult.filtered
@@ -342,7 +286,7 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
                 <span className={`font-medium ${
                   filterResult.success && !filterResult.filtered ? 'text-green-800' : 'text-red-800'
                 }`}>
-                  {filterResult.success && !filterResult.filtered ? '프롬프트 승인' : '프롬프트 거부'}
+                      {filterResult.success && !filterResult.filtered ? 'Prompt Approved' : 'Prompt Rejected'}
                 </span>
                 {filterResult.category && (
                   <span className={`px-2 py-1 text-xs rounded-full ${
@@ -364,7 +308,7 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
               {filterResult.reason && (
                 <div className="mt-3">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    필터링 이유:
+                    Filtering Reason:
                   </label>
                   <div className="text-sm text-gray-600">
                     {filterResult.reason}
@@ -375,7 +319,7 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
               {filterResult.confidence && (
                 <div className="mt-2">
                   <span className="text-sm text-gray-600">
-                    신뢰도: {(filterResult.confidence * 100).toFixed(1)}%
+                    Confidence: {(filterResult.confidence * 100).toFixed(1)}%
                   </span>
                 </div>
               )}
@@ -383,7 +327,7 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
               {filterResult.error && (
                 <div className="mt-3">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    오류 메시지:
+                    Error Message:
                   </label>
                   <div className="code-block bg-white text-red-600">
                     {filterResult.error}
@@ -395,86 +339,22 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
         </div>
       )}
 
-      {/* 테스트 결과 표시 */}
-      {testResult && (
-        <div className="space-y-4 fade-in">
-          <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">OpenRouter API 테스트 결과</h3>
-            
-            <div className={`p-4 rounded-lg ${
-              testResult.success 
-                ? 'bg-green-50 border border-green-200' 
-                : 'bg-red-50 border border-red-200'
-            }`}>
-              <div className="flex items-center space-x-2 mb-2">
-                <span className={`w-3 h-3 rounded-full ${
-                  testResult.success ? 'bg-green-500' : 'bg-red-500'
-                }`} />
-                <span className={`font-medium ${
-                  testResult.success ? 'text-green-800' : 'text-red-800'
-                }`}>
-                  {testResult.success ? '연결 성공' : '연결 실패'}
-                </span>
-              </div>
-              
-              <p className={`text-sm ${
-                testResult.success ? 'text-green-700' : 'text-red-700'
-              }`}>
-                {testResult.message}
-              </p>
-              
-              {testResult.response && (
-                <div className="mt-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    LLM 응답:
-                  </label>
-                  <div className="code-block bg-white max-h-96 overflow-y-auto">
-                    {testResult.response}
-                  </div>
-                </div>
-              )}
-              
-              {testResult.prompt && (
-                <div className="mt-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    테스트 프롬프트:
-                  </label>
-                  <div className="code-block bg-white max-h-32 overflow-y-auto">
-                    {testResult.prompt}
-                  </div>
-                </div>
-              )}
-              
-              {testResult.error && (
-                <div className="mt-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    오류 메시지:
-                  </label>
-                  <div className="code-block bg-white text-red-600">
-                    {testResult.error}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 결과 표시 */}
       {result && (
         <div className="space-y-4 fade-in">
           <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">생성 결과</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Generation Result</h3>
             
             {/* 응답 내용 */}
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
-                <label className="label mb-0">LLM 응답</label>
+                <label className="label mb-0">LLM Response</label>
                 <button
                   onClick={handleCopyResponse}
                   className="btn-outline text-xs"
                 >
-                  복사
+                  Copy
                 </button>
               </div>
               <div className="code-block max-h-96 overflow-y-auto">
@@ -485,12 +365,12 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
             {/* 해시 정보 */}
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
-                <label className="label mb-0">검증 해시</label>
+                <label className="label mb-0">Verification Hash</label>
                 <button
                   onClick={handleCopyHash}
                   className="btn-outline text-xs"
                 >
-                  복사
+                  Copy
                 </button>
               </div>
               <div className="hash-display">
@@ -501,15 +381,15 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
             {/* 메타 정보 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               <div>
-                <span className="font-medium text-gray-700">응답 시간:</span>
+                <span className="font-medium text-gray-700">Response Time:</span>
                 <span className="ml-2">{formatResponseTime(result.response_time)}</span>
               </div>
               <div>
-                <span className="font-medium text-gray-700">모델:</span>
+                <span className="font-medium text-gray-700">Model:</span>
                 <span className="ml-2">{result.model}</span>
               </div>
               <div>
-                <span className="font-medium text-gray-700">제공자:</span>
+                <span className="font-medium text-gray-700">Provider:</span>
                 <span className="ml-2">{result.provider}</span>
               </div>
             </div>
@@ -517,15 +397,15 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
             {/* 블록체인 커밋 결과 */}
             {result.blockchain_commit && (
               <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-medium text-gray-900 mb-2">블록체인 커밋 결과</h4>
+                <h4 className="font-medium text-gray-900 mb-2">Blockchain Commit Result</h4>
                 {result.blockchain_commit.status === 'success' ? (
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2">
-                      <span className="badge-success">성공</span>
+                      <span className="badge-success">Success</span>
                     </div>
                     {result.blockchain_commit.transaction_hash && (
                       <div>
-                        <span className="font-medium text-gray-700">트랜잭션 해시:</span>
+                        <span className="font-medium text-gray-700">Transaction Hash:</span>
                         <a
                           href={getEtherscanUrl(result.blockchain_commit.transaction_hash)}
                           target="_blank"
@@ -538,14 +418,14 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
                     )}
                     {result.blockchain_commit.block_number && (
                       <div>
-                        <span className="font-medium text-gray-700">블록 번호:</span>
+                        <span className="font-medium text-gray-700">Block Number:</span>
                         <span className="ml-2">{result.blockchain_commit.block_number}</span>
                       </div>
                     )}
                   </div>
                 ) : (
                   <div className="flex items-center space-x-2">
-                    <span className="badge-error">실패</span>
+                    <span className="badge-error">Failed</span>
                     <span className="text-sm text-gray-600">
                       {result.blockchain_commit.error_message}
                     </span>

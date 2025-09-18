@@ -27,115 +27,154 @@ export default function Home() {
     <>
       <Head>
         <title>LLM Verification System</title>
-        <meta name="description" content="LLM 출력의 진위를 검증하는 블록체인 기반 시스템" />
+        <meta name="description" content="Blockchain-based system for verifying LLM output authenticity" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
       <Layout>
-        <div className="min-h-screen bg-gray-50">
-          {/* 헤더 */}
-          <div className="bg-white shadow">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex justify-between items-center py-6">
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900">
-                    LLM Verification System
-                  </h1>
-                  <p className="mt-2 text-gray-600">
-                    LLM 출력의 진위를 블록체인으로 검증하는 시스템
-                  </p>
+        {/* 히어로 섹션 */}
+        <div className="relative mb-12">
+          <div className="text-center py-12">
+            <div className="slide-in-left">
+              <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-navy-800 via-primary-700 to-blue-700 bg-clip-text text-transparent mb-6">
+                Secure AI Verification
+              </h1>
+              <p className="text-xl text-navy-600 max-w-3xl mx-auto leading-relaxed">
+                Experience the future of AI authenticity with blockchain-powered verification. 
+                Every response is cryptographically secured and transparently verifiable.
+              </p>
+            </div>
+            
+            {/* 상태 표시 카드 */}
+            <div className="slide-in-right mt-8 flex justify-center">
+              {blockchainStatus && (
+                <div className={`inline-flex items-center space-x-3 px-6 py-3 rounded-full border-2 transition-all duration-300 hover:scale-105 ${
+                  blockchainStatus.status === 'connected'
+                    ? 'bg-gradient-to-r from-success-100 to-success-200 border-success-300 text-success-800'
+                    : 'bg-gradient-to-r from-error-100 to-error-200 border-error-300 text-error-800'
+                }`}>
+                  <div className={`w-3 h-3 rounded-full ${
+                    blockchainStatus.status === 'connected' ? 'bg-success-500 animate-pulse' : 'bg-error-500'
+                  }`} />
+                  <span className="font-semibold">
+                    {blockchainStatus.status === 'connected' ? 'Blockchain Connected' : 'Blockchain Disconnected'}
+                  </span>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
                 </div>
-                <div className="flex items-center space-x-4">
-                  {blockchainStatus && (
-                    <div className="flex items-center space-x-2">
-                      <div
-                        className={`w-3 h-3 rounded-full ${
-                          blockchainStatus.status === 'connected'
-                            ? 'bg-green-500'
-                            : 'bg-red-500'
-                        }`}
-                      />
-                      <span className="text-sm text-gray-600">
-                        {blockchainStatus.status === 'connected' ? '블록체인 연결됨' : '블록체인 연결 안됨'}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
+              )}
             </div>
           </div>
+        </div>
 
-          {/* 탭 네비게이션 */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="border-b border-gray-200">
-              <nav className="-mb-px flex space-x-8">
-                {[
-                  { id: 'generate', name: 'LLM 생성', icon: '🤖' },
-                  { id: 'verify', name: '검증', icon: '🔍' },
-                  { id: 'status', name: '상태', icon: '📊' },
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
-                    className={`${
-                      activeTab === tab.id
-                        ? 'border-primary-500 text-primary-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2`}
-                  >
-                    <span>{tab.icon}</span>
+        {/* 탭 네비게이션 */}
+        <div className="mb-8">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-2 border border-navy-200 shadow-lg">
+            <nav className="flex space-x-2">
+              {[
+                { id: 'generate', name: 'AI Generation', icon: '🤖', desc: 'Create & Verify' },
+                { id: 'verify', name: 'Verification', icon: '🔍', desc: 'Check Authenticity' },
+                { id: 'status', name: 'System Status', icon: '📊', desc: 'Network Health' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`flex-1 relative px-6 py-4 rounded-xl font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${
+                    activeTab === tab.id
+                      ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-lg hover:shadow-xl'
+                      : 'text-navy-600 hover:bg-primary-50 hover:text-primary-700'
+                  }`}
+                >
+                  <div className="flex flex-col items-center space-y-1">
+                    <span className="text-lg">{tab.icon}</span>
                     <span>{tab.name}</span>
-                  </button>
-                ))}
-              </nav>
+                    <span className={`text-xs ${
+                      activeTab === tab.id ? 'text-primary-100' : 'text-navy-400'
+                    }`}>
+                      {tab.desc}
+                    </span>
+                  </div>
+                  {activeTab === tab.id && (
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary-600/20 to-primary-700/20 animate-pulse" />
+                  )}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </div>
+
+        {/* 메인 컨텐츠 */}
+        <div className="space-y-8">
+          {activeTab === 'generate' && (
+            <div className="fade-in">
+              <div className="card hover-glow">
+                <div className="flex items-center space-x-3 mb-6">
+                  <div className="w-12 h-12 bg-gradient-to-br from-primary-600 to-navy-700 rounded-xl flex items-center justify-center shadow-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-navy-800">
+                      AI Response Generation
+                    </h2>
+                    <p className="text-navy-600 mt-1">
+                      Generate verified AI responses with blockchain security
+                    </p>
+                  </div>
+                </div>
+                <LLMGenerator models={models} />
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* 메인 컨텐츠 */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-            {activeTab === 'generate' && (
-              <div className="space-y-6">
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                    LLM 응답 생성 및 검증
-                  </h2>
-                  <p className="text-gray-600 mb-6">
-                    LLM에 프롬프트를 입력하면 응답과 함께 검증 해시가 생성되고 블록체인에 저장됩니다.
-                  </p>
-                  <LLMGenerator models={models} />
+          {activeTab === 'verify' && (
+            <div className="fade-in">
+              <div className="card hover-glow">
+                <div className="flex items-center space-x-3 mb-6">
+                  <div className="w-12 h-12 bg-gradient-to-br from-success-600 to-success-700 rounded-xl flex items-center justify-center shadow-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-navy-800">
+                      Authenticity Verification
+                    </h2>
+                    <p className="text-navy-600 mt-1">
+                      Verify the authenticity of AI-generated content
+                    </p>
+                  </div>
                 </div>
+                <VerificationChecker />
               </div>
-            )}
+            </div>
+          )}
 
-            {activeTab === 'verify' && (
-              <div className="space-y-6">
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                    해시 검증
-                  </h2>
-                  <p className="text-gray-600 mb-6">
-                    해시값을 입력하여 LLM 출력의 진위를 검증할 수 있습니다.
-                  </p>
-                  <VerificationChecker />
+          {activeTab === 'status' && (
+            <div className="fade-in">
+              <div className="card hover-glow">
+                <div className="flex items-center space-x-3 mb-6">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-navy-800">
+                      System Health Monitor
+                    </h2>
+                    <p className="text-navy-600 mt-1">
+                      Real-time blockchain network and system status
+                    </p>
+                  </div>
                 </div>
+                <BlockchainStatus status={blockchainStatus} loading={blockchainLoading} />
               </div>
-            )}
-
-            {activeTab === 'status' && (
-              <div className="space-y-6">
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                    시스템 상태
-                  </h2>
-                  <p className="text-gray-600 mb-6">
-                    블록체인 네트워크와 시스템의 현재 상태를 확인할 수 있습니다.
-                  </p>
-                  <BlockchainStatus status={blockchainStatus} loading={blockchainLoading} />
-                </div>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </Layout>
     </>
