@@ -13,10 +13,8 @@ def create_app(config_name='default'):
     # 블루프린트 등록
     from app.routes.llm_routes import llm_bp
     from app.routes.verification_routes import verification_bp
-    from app.routes.blockchain_routes import blockchain_bp
     
     app.register_blueprint(llm_bp, url_prefix='/api/llm')
     app.register_blueprint(verification_bp, url_prefix='/api/verification')
-    app.register_blueprint(blockchain_bp, url_prefix='/api/blockchain')
     
     return app

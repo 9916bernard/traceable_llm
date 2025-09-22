@@ -1,7 +1,5 @@
 from web3 import Web3
-import json
 import requests
-import os
 from typing import Dict, Any, Optional
 from config import Config
 

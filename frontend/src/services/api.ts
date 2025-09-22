@@ -86,23 +86,17 @@ export const verificationApi = {
   },
 };
 
-// 블록체인 API 서비스
+// 블록체인 API 서비스 (verification 라우트로 이동)
 export const blockchainApi = {
   // 블록체인 상태 조회
   getStatus: async (): Promise<BlockchainStatus> => {
-    const response: AxiosResponse<BlockchainStatus> = await api.get('/blockchain/status');
+    const response: AxiosResponse<BlockchainStatus> = await api.get('/verification/status');
     return response.data;
   },
 
   // 블록체인에서 해시 검증
   verifyHash: async (hashValue: string): Promise<{ exists: boolean; timestamp?: number; status: string; error_message?: string }> => {
-    const response = await api.get(`/blockchain/verify/${hashValue}`);
-    return response.data;
-  },
-
-  // 해시를 블록체인에 커밋
-  commitHash: async (request: BlockchainCommitRequest): Promise<BlockchainCommitResponse> => {
-    const response: AxiosResponse<BlockchainCommitResponse> = await api.post('/blockchain/commit', request);
+    const response = await api.get(`/verification/verify/${hashValue}`);
     return response.data;
   },
 };
