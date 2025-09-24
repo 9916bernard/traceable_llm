@@ -1,5 +1,7 @@
 from web3 import Web3
 import requests
+import json
+import os
 from typing import Dict, Any, Optional
 from config import Config
 
@@ -15,180 +17,225 @@ class BlockchainService:
         self.contract_address = contract_address
         self.account = self.w3.eth.account.from_key(self.private_key)
         
-        # 컨트랙트 ABI (LLMRecord 구조체 지원)
-        self.contract_abi = [
-            {
-                "inputs": [],
-                "stateMutability": "nonpayable",
-                "type": "constructor"
-            },
-            {
-                "anonymous": False,
-                "inputs": [
-                    {
-                        "indexed": True,
-                        "internalType": "string",
-                        "name": "hash",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": False,
-                        "internalType": "string",
-                        "name": "prompt",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": False,
-                        "internalType": "string",
-                        "name": "response",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": False,
-                        "internalType": "string",
-                        "name": "llm_provider",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": False,
-                        "internalType": "string",
-                        "name": "model_name",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": False,
-                        "internalType": "uint256",
-                        "name": "timestamp",
-                        "type": "uint256"
-                    },
-                    {
-                        "indexed": True,
-                        "internalType": "address",
-                        "name": "submitter",
-                        "type": "address"
-                    },
-                    {
-                        "indexed": False,
-                        "internalType": "uint256",
-                        "name": "blockNumber",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "LLMRecordStored",
-                "type": "event"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "hash",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "prompt",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "response",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "llm_provider",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "model_name",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "timestamp",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "storeLLMRecord",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "hash",
-                        "type": "string"
-                    }
-                ],
-                "name": "getLLMRecord",
-                "outputs": [
-                    {
-                        "internalType": "bool",
-                        "name": "exists",
-                        "type": "bool"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "prompt",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "response",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "llm_provider",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "model_name",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "timestamp",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "submitter",
-                        "type": "address"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "hash",
-                        "type": "string"
-                    }
-                ],
-                "name": "hashExists",
-                "outputs": [
-                    {
-                        "internalType": "bool",
-                        "name": "exists",
-                        "type": "bool"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            }
-        ]
+        # 컴파일된 ABI 파일에서 로드
+        self.contract_abi = self._load_contract_abi()
         
         self.contract = self.w3.eth.contract(
             address=Web3.to_checksum_address(contract_address),
             abi=self.contract_abi
         )
+    
+    def _load_contract_abi(self) -> list:
+        """
+        컴파일된 ABI 파일에서 ABI 로드
+        
+        Returns:
+            list: 컨트랙트 ABI
+        """
+        try:
+            # ABI 파일 경로 설정 (프로젝트 루트 기준)
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.dirname(os.path.dirname(current_dir))
+            abi_file_path = os.path.join(
+                project_root,
+                '..',
+                'smart-contracts',
+                'artifacts',
+                'contracts',
+                'LLMVerification.sol',
+                'LLMVerification.json'
+            )
+            abi_file_path = os.path.abspath(abi_file_path)
+            
+            # ABI 파일이 존재하는지 확인
+            if not os.path.exists(abi_file_path):
+                raise FileNotFoundError(f"ABI 파일을 찾을 수 없습니다: {abi_file_path}")
+            
+            # ABI 파일 로드
+            with open(abi_file_path, 'r', encoding='utf-8') as f:
+                contract_json = json.load(f)
+                return contract_json['abi']
+                
+        except Exception as e:
+            print(f"ABI 로드 실패: {e}")
+            # 폴백: 기본 ABI 사용 (기존 하드코딩된 ABI)
+            return self._get_fallback_abi()
+    
+    # def _get_fallback_abi(self) -> list:
+    #     """
+    #     폴백 ABI (기존 하드코딩된 ABI)
+        
+    #     Returns:
+    #         list: 기본 ABI
+    #     """
+    #     return [
+    #         {
+    #             "inputs": [],
+    #             "stateMutability": "nonpayable",
+    #             "type": "constructor"
+    #         },
+    #         {
+    #             "anonymous": False,
+    #             "inputs": [
+    #                 {
+    #                     "indexed": True,
+    #                     "internalType": "string",
+    #                     "name": "hash",
+    #                     "type": "string"
+    #                 },
+    #                 {
+    #                     "indexed": False,
+    #                     "internalType": "string",
+    #                     "name": "prompt",
+    #                     "type": "string"
+    #                 },
+    #                 {
+    #                     "indexed": False,
+    #                     "internalType": "string",
+    #                     "name": "response",
+    #                     "type": "string"
+    #                 },
+    #                 {
+    #                     "indexed": False,
+    #                     "internalType": "string",
+    #                     "name": "llm_provider",
+    #                     "type": "string"
+    #                 },
+    #                 {
+    #                     "indexed": False,
+    #                     "internalType": "string",
+    #                     "name": "model_name",
+    #                     "type": "string"
+    #                 },
+    #                 {
+    #                     "indexed": False,
+    #                     "internalType": "uint256",
+    #                     "name": "timestamp",
+    #                     "type": "uint256"
+    #                 },
+    #                 {
+    #                     "indexed": True,
+    #                     "internalType": "address",
+    #                     "name": "submitter",
+    #                     "type": "address"
+    #                 },
+    #                 {
+    #                     "indexed": False,
+    #                     "internalType": "uint256",
+    #                     "name": "blockNumber",
+    #                     "type": "uint256"
+    #                 }
+    #             ],
+    #             "name": "LLMRecordStored",
+    #             "type": "event"
+    #         },
+    #         {
+    #             "inputs": [
+    #                 {
+    #                     "internalType": "string",
+    #                     "name": "hash",
+    #                     "type": "string"
+    #                 },
+    #                 {
+    #                     "internalType": "string",
+    #                     "name": "prompt",
+    #                     "type": "string"
+    #                 },
+    #                 {
+    #                     "internalType": "string",
+    #                     "name": "response",
+    #                     "type": "string"
+    #                 },
+    #                 {
+    #                     "internalType": "string",
+    #                     "name": "llm_provider",
+    #                     "type": "string"
+    #                 },
+    #                 {
+    #                     "internalType": "string",
+    #                     "name": "model_name",
+    #                     "type": "string"
+    #                 },
+    #                 {
+    #                     "internalType": "uint256",
+    #                     "name": "timestamp",
+    #                     "type": "uint256"
+    #                 }
+    #             ],
+    #             "name": "storeLLMRecord",
+    #             "outputs": [],
+    #             "stateMutability": "nonpayable",
+    #             "type": "function"
+    #         },
+    #         {
+    #             "inputs": [
+    #                 {
+    #                     "internalType": "string",
+    #                     "name": "hash",
+    #                     "type": "string"
+    #                 }
+    #             ],
+    #             "name": "getLLMRecord",
+    #             "outputs": [
+    #                 {
+    #                     "internalType": "bool",
+    #                     "name": "exists",
+    #                     "type": "bool"
+    #                 },
+    #                 {
+    #                     "internalType": "string",
+    #                     "name": "prompt",
+    #                     "type": "string"
+    #                 },
+    #                 {
+    #                     "internalType": "string",
+    #                     "name": "response",
+    #                     "type": "string"
+    #                 },
+    #                 {
+    #                     "internalType": "string",
+    #                     "name": "llm_provider",
+    #                     "type": "string"
+    #                 },
+    #                 {
+    #                     "internalType": "string",
+    #                     "name": "model_name",
+    #                     "type": "string"
+    #                 },
+    #                 {
+    #                     "internalType": "uint256",
+    #                     "name": "timestamp",
+    #                     "type": "uint256"
+    #                 },
+    #                 {
+    #                     "internalType": "address",
+    #                     "name": "submitter",
+    #                     "type": "address"
+    #                 }
+    #             ],
+    #             "stateMutability": "view",
+    #             "type": "function"
+    #         },
+    #         {
+    #             "inputs": [
+    #                 {
+    #                     "internalType": "string",
+    #                     "name": "hash",
+    #                     "type": "string"
+    #                 }
+    #             ],
+    #             "name": "hashExists",
+    #             "outputs": [
+    #                 {
+    #                     "internalType": "bool",
+    #                     "name": "exists",
+    #                     "type": "bool"
+    #                 }
+    #             ],
+    #             "stateMutability": "view",
+    #             "type": "function"
+    #         }
+    #     ]
     
     def commit_hash(self, hash_value: str, prompt: str, response: str, llm_provider: str, model_name: str) -> Dict[str, Any]:
         """

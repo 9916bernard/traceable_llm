@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-
 /**
  * @title LLMVerification
  * @dev LLM 출력의 진위를 검증하기 위한 스마트 컨트랙트
  * @author LLM Verification System
+ * 
+ * Python ABI와 완전히 호환되도록 설계됨
+ * - storeLLMRecord(): LLM 기록 저장
+ * - hashExists(): 해시 존재 여부 확인
+ * - getLLMRecord(): LLM 기록 조회
+ * - LLMRecordStored 이벤트: 기록 저장 시 발생
  */
-contract LLMVerification is Ownable, ReentrancyGuard {
+contract LLMVerification {
     // LLM 기록을 위한 구조체
     struct LLMRecord {
         bool exists;
@@ -21,7 +24,7 @@ contract LLMVerification is Ownable, ReentrancyGuard {
         address submitter;
     }
 
-    // 이벤트 정의
+    // Python ABI와 정확히 일치하는 이벤트 정의
     event LLMRecordStored(
         string indexed hash,
         string prompt,
@@ -37,10 +40,10 @@ contract LLMVerification is Ownable, ReentrancyGuard {
     mapping(string => LLMRecord) private llmRecords;
     
     // 해시 존재 여부만 확인하는 매핑 (가스 효율적)
-    mapping(string => bool) private hashExists;
+    mapping(string => bool) private _hashExists;
 
-    // 생성자
-    constructor() Ownable() {}
+    // 생성자 (Python ABI와 일치)
+    constructor() {}
 
     /**
      * @dev LLM 기록을 블록체인에 저장
@@ -58,7 +61,7 @@ contract LLMVerification is Ownable, ReentrancyGuard {
         string memory llm_provider,
         string memory model_name,
         uint256 timestamp
-    ) external nonReentrant {
+    ) external {
         require(bytes(hash).length == 64, "Invalid hash length");
         require(timestamp > 0, "Invalid timestamp");
         require(!llmRecords[hash].exists, "Record already exists");
@@ -75,7 +78,7 @@ contract LLMVerification is Ownable, ReentrancyGuard {
         });
 
         // 해시 존재 여부도 저장 (가스 효율적 조회용)
-        hashExists[hash] = true;
+        _hashExists[hash] = true;
 
         // 이벤트 발생
         emit LLMRecordStored(hash, prompt, response, llm_provider, model_name, timestamp, msg.sender, block.number);
@@ -119,6 +122,6 @@ contract LLMVerification is Ownable, ReentrancyGuard {
      * @return exists 존재 여부
      */
     function hashExists(string memory hash) external view returns (bool exists) {
-        return hashExists[hash];
+        return _hashExists[hash];
     }
 }
