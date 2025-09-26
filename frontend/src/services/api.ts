@@ -15,7 +15,7 @@ import {
 // API 기본 설정
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api',
-  timeout: 30000,
+  timeout: 60000, // 30초 → 60초 (200% 증가)
   headers: {
     'Content-Type': 'application/json',
   },

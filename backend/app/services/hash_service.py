@@ -13,7 +13,8 @@ class HashService:
         prompt: str,
         response: str,
         parameters: Dict[str, Any],
-        timestamp: datetime = None
+        timestamp: datetime = None,
+        consensus_votes: str = None
     ) -> str:
         """
         LLM 파라미터와 타임스탬프를 이용한 SHA-256 해시 생성
@@ -25,6 +26,7 @@ class HashService:
             response: LLM 응답
             parameters: LLM 파라미터 (temperature, max_tokens 등)
             timestamp: 타임스탬프 (기본값: 현재 시간)
+            consensus_votes: Consensus 투표 결과 (예: "3/5")
         
         Returns:
             str: SHA-256 해시값
@@ -41,6 +43,10 @@ class HashService:
             'parameters': parameters,
             'timestamp': timestamp.isoformat()
         }
+        
+        # Consensus 투표 결과가 있으면 추가
+        if consensus_votes:
+            hash_data['consensus_votes'] = consensus_votes
         
         # JSON 문자열로 변환 (정렬된 키 순서로)
         json_string = json.dumps(hash_data, sort_keys=True, ensure_ascii=False)

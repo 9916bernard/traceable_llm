@@ -4,6 +4,7 @@ from app.services.llm_service import LLMService
 from app.services.hash_service import HashService
 from app.services.blockchain_service import BlockchainService
 from app.services.prompt_filter_service import PromptFilterService
+from app.services.consensus_service import ConsensusService
 from config import Config
 
 llm_bp = Blueprint('llm', __name__)
@@ -59,7 +60,7 @@ def filter_prompt():
 @llm_bp.route('/generate', methods=['POST'])
 def generate_with_verification():
     """
-    LLM 응답 생성 및 검증 해시 커밋
+    LLM 응답 생성 및 검증 해시 커밋 (Consensus 검증 포함)
     """
     try:
         data = request.get_json()
@@ -76,11 +77,24 @@ def generate_with_verification():
         parameters = data.get('parameters', {})
         commit_to_blockchain = data.get('commit_to_blockchain', True)
         
-        # LLM 서비스 호출
+        # 1. Consensus 검증 실행
+        consensus_service = ConsensusService()
+        consensus_result = consensus_service.run_consensus_validation(prompt)
+        
+        # Consensus 검증 실패 시 에러 반환
+        if not consensus_result['consensus_passed']:
+            return jsonify({
+                'success': False,
+                'error': 'Consensus validation failed',
+                'consensus_result': consensus_result,
+                'message': consensus_result['consensus_message']
+            }), 400
+        
+        # 2. LLM 서비스 호출
         llm_service = LLMService()
         llm_response = llm_service.call_llm(provider, model, prompt, parameters)
         
-        # 해시 생성
+        # 3. 해시 생성 (consensus 정보 포함)
         hash_service = HashService()
         hash_value = hash_service.generate_hash(
             llm_provider=provider,
@@ -88,7 +102,8 @@ def generate_with_verification():
             prompt=prompt,
             response=llm_response['content'],
             parameters=parameters,
-            timestamp=datetime.utcnow()
+            timestamp=datetime.utcnow(),
+            consensus_votes=f"{consensus_result['safe_votes']}/{consensus_result['total_models']}"
         )
         
         result = {
@@ -97,10 +112,11 @@ def generate_with_verification():
             'hash_value': hash_value,
             'response_time': llm_response['response_time'],
             'model': model,
-            'provider': provider
+            'provider': provider,
+            'consensus_result': consensus_result
         }
         
-        # 블록체인에 커밋
+        # 4. 블록체인에 커밋
         if commit_to_blockchain and Config.CONTRACT_ADDRESS:
             blockchain_service = BlockchainService(
                 Config.ETHEREUM_RPC_URL,

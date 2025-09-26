@@ -68,7 +68,7 @@ class PromptFilterService:
                 f"{self.base_url}/chat/completions",
                 headers=self.headers,
                 json=payload,
-                timeout=30
+                timeout=60  # 30초 → 60초 (200% 증가)
             )
             
             if response.status_code != 200:

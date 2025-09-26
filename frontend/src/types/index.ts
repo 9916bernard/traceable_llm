@@ -25,6 +25,7 @@ export interface LLMResponse {
   response_time: number;
   model: string;
   provider: string;
+  consensus_result?: ConsensusResult;
   blockchain_commit?: {
     transaction_hash?: string;
     block_number?: number;
@@ -32,6 +33,34 @@ export interface LLMResponse {
     error_message?: string;
   };
 }
+
+// Consensus 관련 타입 정의
+export interface ConsensusResult {
+  consensus_passed: boolean;
+  total_models: number;
+  harmful_votes: number;
+  safe_votes: number;
+  threshold: number;
+  model_responses: Record<string, ModelResponse>;
+  consensus_message: string;
+}
+
+export interface ModelResponse {
+  is_harmful: boolean;
+  response_time: number;
+  model: string;
+  error?: string;
+}
+
+// 로딩 단계 타입 정의
+export type LoadingStep = 
+  | 'idle'
+  | 'consensus_validation'
+  | 'llm_generation'
+  | 'hash_creation'
+  | 'blockchain_commit'
+  | 'completed'
+  | 'error';
 
 // 검증 관련 타입 정의
 export interface VerificationRecord {

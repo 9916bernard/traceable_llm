@@ -414,7 +414,7 @@ class BlockchainService:
                 'apikey': api_key
             }
             
-            response = requests.get(etherscan_url, params=params, timeout=10)
+            response = requests.get(etherscan_url, params=params, timeout=20)  # 10초 → 20초 (200% 증가)
             response.raise_for_status()
             data = response.json()
             
@@ -449,7 +449,7 @@ class BlockchainService:
                 'apikey': api_key
             }
             
-            receipt_response = requests.get(etherscan_url, params=receipt_params, timeout=10)
+            receipt_response = requests.get(etherscan_url, params=receipt_params, timeout=20)  # 10초 → 20초 (200% 증가)
             receipt_response.raise_for_status()
             receipt_data = receipt_response.json()
             

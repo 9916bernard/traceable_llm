@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useMutation } from 'react-query';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import { LLMRequest, LLMResponse, TestResponse, PromptFilterResponse } from '@/types';
+import { LLMRequest, LLMResponse, TestResponse, PromptFilterResponse, LoadingStep, ConsensusResult } from '@/types';
 import { llmApi } from '@/services/api';
 import { formatResponseTime, copyToClipboard, getEtherscanUrl } from '@/utils';
+import ConsensusLoading from './ConsensusLoading';
 
 interface LLMGeneratorProps {
   models?: Record<string, string[]>;
@@ -22,6 +23,9 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
   const [filterResult, setFilterResult] = useState<PromptFilterResponse | null>(null);
   const [isFiltering, setIsFiltering] = useState(false);
   const [showCommitButton, setShowCommitButton] = useState(false);
+  const [currentStep, setCurrentStep] = useState<LoadingStep>('idle');
+  const [consensusResult, setConsensusResult] = useState<ConsensusResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const {
     register,
@@ -38,18 +42,32 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
 
   const selectedProvider = watch('provider');
 
-  // LLM 생성 뮤테이션
+  // LLM 생성 뮤테이션 (Consensus 단계 포함)
   const generateMutation = useMutation(llmApi.generate, {
     onMutate: () => {
       setIsGenerating(true);
       setResult(null);
+      setError(null);
+      setConsensusResult(null);
+      setCurrentStep('consensus_validation');
     },
     onSuccess: (data) => {
       setResult(data);
-      toast.success('LLM response has been generated!');
+      setConsensusResult(data.consensus_result || null);
+      setCurrentStep('completed');
+      toast.success('LLM response has been generated with consensus validation!');
     },
     onError: (error: any) => {
-      toast.error(`Generation failed: ${error.response?.data?.error || error.message}`);
+      setCurrentStep('error');
+      setError(error.response?.data?.error || error.message);
+      
+      // Consensus 실패인 경우 특별 처리
+      if (error.response?.data?.consensus_result) {
+        setConsensusResult(error.response.data.consensus_result);
+        toast.error(`Consensus validation failed: ${error.response.data.message}`);
+      } else {
+        toast.error(`Generation failed: ${error.response?.data?.error || error.message}`);
+      }
     },
     onSettled: () => {
       setIsGenerating(false);
@@ -93,7 +111,22 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
   );
 
 
-  const onSubmit = (data: FormData) => {
+  // 로딩 단계 시뮬레이션
+  const simulateLoadingSteps = async () => {
+    setCurrentStep('consensus_validation');
+    await new Promise(resolve => setTimeout(resolve, 2000)); // 2초 대기
+    
+    setCurrentStep('llm_generation');
+    await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5초 대기
+    
+    setCurrentStep('hash_creation');
+    await new Promise(resolve => setTimeout(resolve, 500)); // 0.5초 대기
+    
+    setCurrentStep('blockchain_commit');
+    await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기
+  };
+
+  const onSubmit = async (data: FormData) => {
     const request: LLMRequest = {
       provider: data.provider,
       model: data.model,
@@ -105,6 +138,10 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
       commit_to_blockchain: true,
     };
 
+    // 로딩 단계 시뮬레이션 시작
+    simulateLoadingSteps();
+    
+    // 실제 API 호출
     generateMutation.mutate(request);
   };
 
@@ -218,6 +255,10 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
                 reset();
                 setFilterResult(null);
                 setShowCommitButton(false);
+                setResult(null);
+                setCurrentStep('idle');
+                setConsensusResult(null);
+                setError(null);
               }}
               className="btn-outline"
               disabled={isGenerating || isFiltering}
@@ -340,6 +381,20 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
       )}
 
 
+      {/* 로딩 상태 표시 */}
+      {isGenerating && (
+        <div className="space-y-4 fade-in">
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Processing Request</h3>
+            <ConsensusLoading 
+              currentStep={currentStep}
+              consensusResult={consensusResult || undefined}
+              error={error || undefined}
+            />
+          </div>
+        </div>
+      )}
+
       {/* 결과 표시 */}
       {result && (
         <div className="space-y-4 fade-in">
@@ -393,6 +448,42 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
                 <span className="ml-2">{result.provider}</span>
               </div>
             </div>
+
+            {/* Consensus 결과 표시 */}
+            {result.consensus_result && (
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-3">Consensus Validation Results</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium text-gray-700">Safe Votes:</span>
+                    <span className="ml-2 text-green-600 font-semibold">
+                      {result.consensus_result.safe_votes}/{result.consensus_result.total_models}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Harmful Votes:</span>
+                    <span className="ml-2 text-red-600 font-semibold">
+                      {result.consensus_result.harmful_votes}/{result.consensus_result.total_models}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Threshold:</span>
+                    <span className="ml-2">{result.consensus_result.threshold} models</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Status:</span>
+                    <span className={`ml-2 font-semibold ${
+                      result.consensus_result.consensus_passed ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {result.consensus_result.consensus_passed ? 'PASSED' : 'FAILED'}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-3 text-sm text-gray-600">
+                  {result.consensus_result.consensus_message}
+                </div>
+              </div>
+            )}
 
             {/* 블록체인 커밋 결과 */}
             {result.blockchain_commit && (

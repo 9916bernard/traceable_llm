@@ -94,7 +94,7 @@ class LLMService:
                 f"{self.base_url}/chat/completions",
                 headers=headers,
                 json=payload,
-                timeout=60
+                timeout=120  # 60초 → 120초 (200% 증가)
             )
             
             if response.status_code != 200:
