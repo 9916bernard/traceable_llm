@@ -45,7 +45,7 @@ class HashService:
         # JSON 문자열로 변환 (정렬된 키 순서로)
         json_string = json.dumps(hash_data, sort_keys=True, ensure_ascii=False)
         
-        # SHA-256 해시 생성
+        # !!!SHA-256 해시 생성!!!
         hash_object = hashlib.sha256(json_string.encode('utf-8'))
         return hash_object.hexdigest()
     

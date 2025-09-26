@@ -140,6 +140,9 @@ def get_available_models():
     
     return jsonify(models), 200
 
+
+
+#여기는 테스트
 @llm_bp.route('/test', methods=['POST'])
 def test_openrouter_connection():
     """

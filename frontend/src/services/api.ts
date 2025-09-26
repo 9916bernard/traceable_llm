@@ -94,11 +94,6 @@ export const blockchainApi = {
     return response.data;
   },
 
-  // 블록체인에서 해시 검증
-  verifyHash: async (hashValue: string): Promise<{ exists: boolean; timestamp?: number; status: string; error_message?: string }> => {
-    const response = await api.get(`/verification/verify/${hashValue}`);
-    return response.data;
-  },
 };
 
 export default api;

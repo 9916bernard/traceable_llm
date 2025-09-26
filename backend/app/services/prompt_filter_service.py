@@ -38,7 +38,7 @@ class PromptFilterService:
 다음 JSON 형식으로만 응답해주세요:
 {
   "category": "APPROPRIATE|JAILBREAK|MEANINGLESS|HARMFUL",
-  "reason": "분류 이유 (한국어로)",
+  "reason": "분류 이유 (영어로)",
   "confidence": 0.95
 }"""
     

@@ -7,14 +7,16 @@ from config import Config
 
 class BlockchainService:
     """블록체인 연동 서비스"""
-    
+#region 생성자
     def __init__(self, rpc_url: str, private_key: str, contract_address: str):
+        # 우리가 Web3 HTTP 사용해서 rpc_url: sepolia testnet 에 연결해서 반환하는 w3 객체 생성
         self.w3 = Web3(Web3.HTTPProvider(rpc_url))
-        # 개인키 정리 (0x 접두사 제거 후 다시 추가)
+        # 개인키 정리 (0x 접두사 제거 후 다시 추가) 자꾸 해시 포멧 안맞는다해서 넣음
         if private_key.startswith('0x'):
             private_key = private_key[2:]
         self.private_key = '0x' + private_key
         self.contract_address = contract_address
+        # 계정 객체 생성 (지갑)
         self.account = self.w3.eth.account.from_key(self.private_key)
         
         # 컴파일된 ABI 파일에서 로드
@@ -24,7 +26,9 @@ class BlockchainService:
             address=Web3.to_checksum_address(contract_address),
             abi=self.contract_abi
         )
-    
+#endregion
+
+#region 컨트랙트 ABI 로드
     def _load_contract_abi(self) -> list:
         """
         컴파일된 ABI 파일에서 ABI 로드
@@ -60,7 +64,9 @@ class BlockchainService:
             print(f"ABI 로드 실패: {e}")
             # 폴백: 기본 ABI 사용 (기존 하드코딩된 ABI)
             return self._get_fallback_abi()
-    
+#endregion
+
+#region 컨트랙트 함수 호출
     # def _get_fallback_abi(self) -> list:
     #     """
     #     폴백 ABI (기존 하드코딩된 ABI)
@@ -236,7 +242,8 @@ class BlockchainService:
     #             "type": "function"
     #         }
     #     ]
-    
+
+    #region commit hash
     def commit_hash(self, hash_value: str, prompt: str, response: str, llm_provider: str, model_name: str) -> Dict[str, Any]:
         """
         LLM 기록을 블록체인에 커밋
@@ -255,7 +262,7 @@ class BlockchainService:
             # 현재 타임스탬프
             timestamp = int(self.w3.eth.get_block('latest')['timestamp'])
             
-            # 가스 추정
+            # 가스 추정 - 우리 LLMRecord 컨트렉트 함수의 저장 사이즈에 기반해서 web3 의 가스 추정 함수를 사용해서 추정하는듯 - Limit 을 추정하기 위함임
             try:
                 estimated_gas = self.contract.functions.storeLLMRecord(
                     hash_value, prompt, response, llm_provider, model_name, timestamp
@@ -284,7 +291,7 @@ class BlockchainService:
             safe_llm_provider = llm_provider.encode('utf-8', errors='ignore').decode('utf-8')
             safe_model_name = model_name.encode('utf-8', errors='ignore').decode('utf-8')
             
-            # 트랜잭션 구성
+            # 트랜잭션 구성 ! 여기서 nounce 생성 ! 
             transaction = self.contract.functions.storeLLMRecord(
                 hash_value, safe_prompt, safe_response, safe_llm_provider, safe_model_name, timestamp
             ).build_transaction({
@@ -329,83 +336,60 @@ class BlockchainService:
                 'error_message': error_msg,
                 'original_error': str(e)
             }
+    #endregion
+
     
-    def verify_hash(self, hash_value: str) -> Dict[str, Any]:
-        """
-        블록체인에서 해시 검증 (컨트랙트 함수 사용)
+# 지금은 쓰이지 않음. 나중에 더 세세한 정보가 필요하면 사용
+    # def verify_llm_record(self, hash_value: str) -> Dict[str, Any]:
+    #     """
+    #     블록체인에서 LLM 기록 검증
         
-        Args:
-            hash_value: 검증할 해시값
+    #     Args:
+    #         hash_value: 검증할 해시값
         
-        Returns:
-            Dict: 검증 결과
-        """
-        try:
-            # hashExists 함수로 존재 여부만 확인
-            exists = self.contract.functions.hashExists(hash_value).call()
+    #     Returns:
+    #         Dict: 검증 결과 (프롬프트, 응답, 모델 정보 포함)
+    #     """
+    #     try:
+    #         # 블록체인에서 LLM 기록 조회
+    #         result = self.contract.functions.getLLMRecord(hash_value).call()
             
-            return {
-                'exists': exists,
-                'timestamp': 0 if not exists else int(self.w3.eth.get_block('latest')['timestamp']),
-                'submitter': '0x0000000000000000000000000000000000000000' if not exists else self.account.address,
-                'status': 'success'
-            }
+    #         exists = result[0]
+    #         if not exists:
+    #             return {
+    #                 'exists': False,
+    #                 'status': 'error',
+    #                 'error_message': 'LLM 기록을 찾을 수 없습니다'
+    #             }
             
-        except Exception as e:
-            return {
-                'exists': False,
-                'status': 'error',
-                'error_message': str(e)
-            }
-    
-    def verify_llm_record(self, hash_value: str) -> Dict[str, Any]:
-        """
-        블록체인에서 LLM 기록 검증
-        
-        Args:
-            hash_value: 검증할 해시값
-        
-        Returns:
-            Dict: 검증 결과 (프롬프트, 응답, 모델 정보 포함)
-        """
-        try:
-            # 블록체인에서 LLM 기록 조회
-            result = self.contract.functions.getLLMRecord(hash_value).call()
+    #         # UTF-8 문자열 안전하게 처리 (한글 깨짐 방지)
+    #         prompt = result[1] if result[1] else ""
+    #         response = result[2] if result[2] else ""
+    #         llm_provider = result[3] if result[3] else ""
+    #         model_name = result[4] if result[4] else ""
+    #         timestamp = result[5]
+    #         submitter = result[6]
             
-            exists = result[0]
-            if not exists:
-                return {
-                    'exists': False,
-                    'status': 'error',
-                    'error_message': 'LLM 기록을 찾을 수 없습니다'
-                }
+    #         return {
+    #             'exists': True,
+    #             'hash_value': hash_value,
+    #             'prompt': prompt,
+    #             'response': response,
+    #             'llm_provider': llm_provider,
+    #             'model_name': model_name,
+    #             'timestamp': timestamp,
+    #             'submitter': submitter,
+    #             'status': 'success'
+    #         }
             
-            # UTF-8 문자열 안전하게 처리 (한글 깨짐 방지)
-            prompt = result[1] if result[1] else ""
-            response = result[2] if result[2] else ""
-            llm_provider = result[3] if result[3] else ""
-            model_name = result[4] if result[4] else ""
-            timestamp = result[5]
-            submitter = result[6]
-            
-            return {
-                'exists': True,
-                'hash_value': hash_value,
-                'prompt': prompt,
-                'response': response,
-                'llm_provider': llm_provider,
-                'model_name': model_name,
-                'timestamp': timestamp,
-                'submitter': submitter,
-                'status': 'success'
-            }
-            
-        except Exception as e:
-            return {
-                'exists': False,
-                'status': 'error',
-                'error_message': str(e)
-            }
+    #     except Exception as e:
+    #         return {
+    #             'exists': False,
+    #             'status': 'error',
+    #             'error_message': str(e)
+    #         }
+
+    #region verify hash
     
     def verify_transaction_hash(self, transaction_hash: str) -> Dict[str, Any]:
         """

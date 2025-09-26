@@ -24,7 +24,7 @@ contract LLMVerification {
         address submitter;
     }
 
-    // Python ABI와 정확히 일치하는 이벤트 정의
+    // Python ABI와 정확히 일치하는 이벤트 정의 , 여기서 이벤트란 emit event 해서 올리는거임 모든 사용자에게 알림이 감 ledger
     event LLMRecordStored(
         string indexed hash,
         string prompt,
@@ -36,7 +36,7 @@ contract LLMVerification {
         uint256 blockNumber
     );
 
-    // 해시별 LLM 기록 저장소
+    // 해시별 LLM 기록 이따 storeLLMRecord 에서 쓰임
     mapping(string => LLMRecord) private llmRecords;
     
     // 해시 존재 여부만 확인하는 매핑 (가스 효율적)

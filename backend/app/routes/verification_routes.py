@@ -54,6 +54,8 @@ def verify_hash():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+#not used for now network check
 @verification_bp.route('/status', methods=['GET'])
 def get_blockchain_status():
     """
@@ -81,25 +83,3 @@ def get_blockchain_status():
             'error_message': str(e)
         }), 500
 
-@verification_bp.route('/verify/<hash_value>', methods=['GET'])
-def verify_hash_on_blockchain(hash_value):
-    """
-    블록체인에서 해시 검증
-    """
-    try:
-        if not Config.CONTRACT_ADDRESS:
-            return jsonify({
-                'error': '블록체인 설정이 완료되지 않았습니다'
-            }), 400
-        
-        blockchain_service = BlockchainService(
-            Config.ETHEREUM_RPC_URL,
-            Config.PRIVATE_KEY,
-            Config.CONTRACT_ADDRESS
-        )
-        
-        result = blockchain_service.verify_hash(hash_value)
-        return jsonify(result), 200
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
