@@ -96,13 +96,14 @@ def generate_with_verification():
         
         # 3. 해시 생성 (consensus 정보 포함)
         hash_service = HashService()
+        timestamp = datetime.utcnow()  # timestamp 변수로 저장
         hash_value = hash_service.generate_hash(
             llm_provider=provider,
             model_name=model,
             prompt=prompt,
             response=llm_response['content'],
             parameters=parameters,
-            timestamp=datetime.utcnow(),
+            timestamp=timestamp,
             consensus_votes=f"{consensus_result['safe_votes']}/{consensus_result['total_models']}"
         )
         
@@ -123,12 +124,19 @@ def generate_with_verification():
                 Config.PRIVATE_KEY,
                 Config.CONTRACT_ADDRESS
             )
+            # 해시 생성 시 사용된 정확한 timestamp와 consensus_votes 전달
+            # timestamp를 그대로 전달 (마이크로초 포함)
+            consensus_votes_str = f"{consensus_result['safe_votes']}/{consensus_result['total_models']}"
+            
             commit_result = blockchain_service.commit_hash(
                 hash_value, 
                 prompt, 
                 llm_response['content'], 
                 provider, 
-                model
+                model,
+                timestamp,  # datetime 객체 그대로 전달
+                parameters,  # 파라미터 전달
+                consensus_votes_str
             )
             result['blockchain_commit'] = commit_result
             

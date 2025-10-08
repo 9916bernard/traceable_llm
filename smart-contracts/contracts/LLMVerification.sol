@@ -20,7 +20,9 @@ contract LLMVerification {
         string response;
         string llm_provider;
         string model_name;
-        uint256 timestamp;
+        string timestamp;  // ISO format timestamp string (e.g., "2025-10-08T01:32:24.123456")
+        string parameters;  // JSON string of parameters (e.g., '{"temperature":0.2,"max_tokens":200}')
+        string consensus_votes;
         address submitter;
     }
 
@@ -31,7 +33,9 @@ contract LLMVerification {
         string response,
         string llm_provider,
         string model_name,
-        uint256 timestamp,
+        string timestamp,
+        string parameters,
+        string consensus_votes,
         address indexed submitter,
         uint256 blockNumber
     );
@@ -52,7 +56,9 @@ contract LLMVerification {
      * @param response LLM 응답
      * @param llm_provider LLM 제공자
      * @param model_name 모델명
-     * @param timestamp 타임스탬프
+     * @param timestamp 타임스탬프 (ISO format string, e.g., "2025-10-08T01:32:24.123456")
+     * @param parameters 파라미터 (JSON string, e.g., '{"temperature":0.2,"max_tokens":200}')
+     * @param consensus_votes Consensus 투표 결과 (예: "3/5")
      */
     function storeLLMRecord(
         string memory hash,
@@ -60,10 +66,12 @@ contract LLMVerification {
         string memory response,
         string memory llm_provider,
         string memory model_name,
-        uint256 timestamp
+        string memory timestamp,
+        string memory parameters,
+        string memory consensus_votes
     ) external {
         require(bytes(hash).length == 64, "Invalid hash length");
-        require(timestamp > 0, "Invalid timestamp");
+        require(bytes(timestamp).length > 0, "Invalid timestamp");
         require(!llmRecords[hash].exists, "Record already exists");
 
         // LLM 기록 저장
@@ -74,6 +82,8 @@ contract LLMVerification {
             llm_provider: llm_provider,
             model_name: model_name,
             timestamp: timestamp,
+            parameters: parameters,
+            consensus_votes: consensus_votes,
             submitter: msg.sender
         });
 
@@ -81,7 +91,7 @@ contract LLMVerification {
         _hashExists[hash] = true;
 
         // 이벤트 발생
-        emit LLMRecordStored(hash, prompt, response, llm_provider, model_name, timestamp, msg.sender, block.number);
+        emit LLMRecordStored(hash, prompt, response, llm_provider, model_name, timestamp, parameters, consensus_votes, msg.sender, block.number);
     }
 
     /**
@@ -92,7 +102,9 @@ contract LLMVerification {
      * @return response LLM 응답
      * @return llm_provider LLM 제공자
      * @return model_name 모델명
-     * @return timestamp 타임스탬프
+     * @return timestamp 타임스탬프 (ISO format string)
+     * @return parameters 파라미터 (JSON string)
+     * @return consensus_votes Consensus 투표 결과
      * @return submitter 제출자 주소
      */
     function getLLMRecord(string memory hash) external view returns (
@@ -101,7 +113,9 @@ contract LLMVerification {
         string memory response,
         string memory llm_provider,
         string memory model_name,
-        uint256 timestamp,
+        string memory timestamp,
+        string memory parameters,
+        string memory consensus_votes,
         address submitter
     ) {
         LLMRecord memory record = llmRecords[hash];
@@ -112,6 +126,8 @@ contract LLMVerification {
             record.llm_provider,
             record.model_name,
             record.timestamp,
+            record.parameters,
+            record.consensus_votes,
             record.submitter
         );
     }

@@ -244,7 +244,7 @@ class BlockchainService:
     #     ]
 
     #region commit hash
-    def commit_hash(self, hash_value: str, prompt: str, response: str, llm_provider: str, model_name: str) -> Dict[str, Any]:
+    def commit_hash(self, hash_value: str, prompt: str, response: str, llm_provider: str, model_name: str, timestamp, parameters: dict, consensus_votes: str = "") -> Dict[str, Any]:
         """
         LLM 기록을 블록체인에 커밋
         
@@ -254,18 +254,42 @@ class BlockchainService:
             response: LLM 응답
             llm_provider: LLM 제공자
             model_name: 모델명
+            timestamp: 해시 생성 시 사용된 정확한 timestamp (datetime 객체)
+            parameters: LLM 파라미터 (dict)
+            consensus_votes: Consensus 투표 결과 (예: "3/5")
         
         Returns:
             Dict: 트랜잭션 정보
         """
         try:
-            # 현재 타임스탬프
-            timestamp = int(self.w3.eth.get_block('latest')['timestamp'])
+            # 해시 생성 시 사용된 정확한 timestamp를 ISO format string으로 변환
+            # 해시 계산에 사용된 것과 동일한 형식
+            timestamp_string = timestamp.isoformat()
+            
+            # parameters를 JSON string으로 변환 (해시 생성과 동일한 방식)
+            import json
+            parameters_string = json.dumps(parameters, sort_keys=True, ensure_ascii=False)
+            
+            # 🔍 로그: 블록체인 커밋 데이터 출력
+            print("=" * 80)
+            print("🔗 BLOCKCHAIN COMMIT DEBUG LOG")
+            print("=" * 80)
+            print("📤 스마트 컨트랙트에 전달되는 데이터:")
+            print(f"  hash_value: {hash_value}")
+            print(f"  prompt: {prompt[:50]}..." if len(prompt) > 50 else f"  prompt: {prompt}")
+            print(f"  response: {response[:50]}..." if len(response) > 50 else f"  response: {response}")
+            print(f"  llm_provider: {llm_provider}")
+            print(f"  model_name: {model_name}")
+            print(f"  timestamp: {timestamp_string}")
+            print(f"  parameters: {parameters_string}")
+            print(f"  consensus_votes: {consensus_votes}")
+            print("=" * 80)
+            print()
             
             # 가스 추정 - 우리 LLMRecord 컨트렉트 함수의 저장 사이즈에 기반해서 web3 의 가스 추정 함수를 사용해서 추정하는듯 - Limit 을 추정하기 위함임
             try:
                 estimated_gas = self.contract.functions.storeLLMRecord(
-                    hash_value, prompt, response, llm_provider, model_name, timestamp
+                    hash_value, prompt, response, llm_provider, model_name, timestamp_string, parameters_string, consensus_votes
                 ).estimate_gas({'from': self.account.address})
                 gas_limit = int(estimated_gas * 1.2)  # 20% 여유분 추가
             except Exception as e:
@@ -293,7 +317,7 @@ class BlockchainService:
             
             # 트랜잭션 구성 ! 여기서 nounce 생성 ! 
             transaction = self.contract.functions.storeLLMRecord(
-                hash_value, safe_prompt, safe_response, safe_llm_provider, safe_model_name, timestamp
+                hash_value, safe_prompt, safe_response, safe_llm_provider, safe_model_name, timestamp_string, parameters_string, consensus_votes
             ).build_transaction({
                 'from': self.account.address,
                 'gas': gas_limit,
@@ -485,6 +509,22 @@ class BlockchainService:
             # 트랜잭션 정보 안전하게 접근
             tx_result = data['result']
             
+            # Input Data 추출 및 디코딩
+            input_data_hex = tx_result.get('input', '0x')
+            decoded_input_data = None
+            hash_verification = None
+            
+            try:
+                if input_data_hex and input_data_hex != '0x':
+                    # Web3를 사용하여 Input Data 디코딩
+                    decoded_input_data = self._decode_input_data(input_data_hex)
+                    
+                    # 해시 역계산 검증
+                    if decoded_input_data:
+                        hash_verification = self._verify_hash_from_input_data(decoded_input_data)
+            except Exception as e:
+                print(f"Input Data 디코딩/검증 오류: {str(e)}")
+            
             return {
                 'exists': True,
                 'transaction_hash': transaction_hash,
@@ -495,7 +535,9 @@ class BlockchainService:
                 'from_address': tx_result.get('from'),
                 'to_address': tx_result.get('to'),
                 'value': tx_result.get('value'),
-                'etherscan_url': f"https://sepolia.etherscan.io/tx/{transaction_hash}"
+                'etherscan_url': f"https://sepolia.etherscan.io/tx/{transaction_hash}",
+                'input_data': decoded_input_data,
+                'hash_verification': hash_verification
             }
             
         except requests.exceptions.RequestException as e:
@@ -509,6 +551,107 @@ class BlockchainService:
                 'exists': False,
                 'status': 'error',
                 'error_message': str(e)
+            }
+    
+    def _decode_input_data(self, input_data_hex: str) -> Dict[str, Any]:
+        """
+        트랜잭션 Input Data 디코딩
+        
+        Args:
+            input_data_hex: 16진수 형식의 Input Data
+        
+        Returns:
+            Dict: 디코딩된 데이터
+        """
+        try:
+            # Function signature (첫 4바이트)는 제외
+            if len(input_data_hex) <= 10:  # '0x' + 8자리 (4바이트)
+                return None
+            
+            # ABI를 사용하여 디코딩
+            decoded = self.contract.decode_function_input(input_data_hex)
+            function_obj, params = decoded
+            
+            return {
+                'hash': params.get('hash', ''),
+                'prompt': params.get('prompt', ''),
+                'response': params.get('response', ''),
+                'llm_provider': params.get('llm_provider', ''),
+                'model_name': params.get('model_name', ''),
+                'timestamp': params.get('timestamp', ''),
+                'parameters': params.get('parameters', ''),
+                'consensus_votes': params.get('consensus_votes', '')
+            }
+        except Exception as e:
+            print(f"Input Data 디코딩 오류: {str(e)}")
+            return None
+    
+    def _verify_hash_from_input_data(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Input Data로부터 해시 역계산 및 검증
+        
+        Args:
+            input_data: 디코딩된 Input Data
+        
+        Returns:
+            Dict: 검증 결과
+        """
+        try:
+            import hashlib
+            import json
+            
+            # 해시 재계산을 위한 데이터 구성 (HashService 방식)
+            # parameters는 JSON 문자열로 저장되어 있으므로 파싱
+            parameters_dict = {}
+            if input_data.get('parameters'):
+                try:
+                    parameters_dict = json.loads(input_data['parameters'])
+                except:
+                    parameters_dict = {}
+            
+            hash_data = {
+                'llm_provider': input_data['llm_provider'],
+                'model_name': input_data['model_name'],
+                'prompt': input_data['prompt'],
+                'response': input_data['response'],
+                'parameters': parameters_dict,
+                'timestamp': input_data['timestamp']
+            }
+            
+            # consensus_votes 추가 (있는 경우)
+            if input_data.get('consensus_votes'):
+                hash_data['consensus_votes'] = input_data['consensus_votes']
+            
+            # JSON 문자열로 변환 (HashService와 동일한 방식)
+            json_string = json.dumps(hash_data, sort_keys=True, ensure_ascii=False)
+            
+            # SHA-256 해시 계산
+            calculated_hash = hashlib.sha256(json_string.encode('utf-8')).hexdigest()
+            
+            # 원본 해시와 비교
+            original_hash = input_data['hash']
+            hash_matches = calculated_hash == original_hash
+            
+            # 로그 출력
+            print("=" * 80)
+            print("🔍 HASH VERIFICATION FROM BLOCKCHAIN INPUT DATA")
+            print("=" * 80)
+            print(f"원본 해시:   {original_hash}")
+            print(f"계산된 해시: {calculated_hash}")
+            print(f"일치 여부:   {'✅ 일치' if hash_matches else '❌ 불일치'}")
+            print("=" * 80)
+            
+            return {
+                'verified': hash_matches,
+                'original_hash': original_hash,
+                'calculated_hash': calculated_hash,
+                'message': '해시가 일치합니다. 데이터 무결성이 확인되었습니다.' if hash_matches else '해시가 일치하지 않습니다. 데이터가 변조되었을 수 있습니다.'
+            }
+        except Exception as e:
+            print(f"해시 검증 오류: {str(e)}")
+            return {
+                'verified': False,
+                'error': str(e)
             }
     
     def get_network_info(self) -> Dict[str, Any]:

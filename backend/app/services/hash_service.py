@@ -48,12 +48,37 @@ class HashService:
         if consensus_votes:
             hash_data['consensus_votes'] = consensus_votes
         
+        # 🔍 로그: 해시 생성 과정 출력
+        print("=" * 80)
+        print("🔍 HASH GENERATION DEBUG LOG")
+        print("=" * 80)
+        print("📊 hash_data 구조:")
+        for key, value in hash_data.items():
+            if len(str(value)) > 100:
+                print(f"  {key}: {str(value)[:100]}... (길이: {len(str(value))})")
+            else:
+                print(f"  {key}: {repr(value)}")
+        print()
+        
         # JSON 문자열로 변환 (정렬된 키 순서로)
         json_string = json.dumps(hash_data, sort_keys=True, ensure_ascii=False)
         
+        print("🔤 JSON 문자열 (정렬된 키):")
+        print(json_string)
+        print()
+        print(f"📏 JSON 길이: {len(json_string)} bytes")
+        print()
+        
         # !!!SHA-256 해시 생성!!!
         hash_object = hashlib.sha256(json_string.encode('utf-8'))
-        return hash_object.hexdigest()
+        calculated_hash = hash_object.hexdigest()
+        
+        print(f"🔐 생성된 SHA-256 해시:")
+        print(f"  {calculated_hash}")
+        print("=" * 80)
+        print()
+        
+        return calculated_hash
     
     @staticmethod
     def verify_hash(
