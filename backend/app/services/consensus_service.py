@@ -49,7 +49,7 @@ Your response should be exactly "True" or "False" with no additional text or exp
                 provider=model_info['provider'],
                 model=model_info['model'],
                 prompt=prompt,
-                parameters={'temperature': 0.1, 'max_tokens': 10}
+                parameters={'temperature': 0.1, 'max_tokens': 20}
             )
             response_time = time.time() - start_time
             

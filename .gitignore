@@ -71,3 +71,16 @@ dist/
 IMPLEMENTATION_STATUS.md
 PROJECT_STRUCTURE.md
 study.md
+
+# API Keys and Secrets (민감 정보)
+API_KEY_SETUP.md
+keys.md
+MASTER_KEYS.md
+SEPOLIA_SETUP.md
+
+# Analysis results and test files
+analysis/results/
+analysis/test_*.py
+analysis/test_*.csv
+analysis/*.log
+analysis/experiment_log.txt
