@@ -172,18 +172,3 @@ export interface TestResponse {
   model?: string;
   provider?: string;
 }
-
-// 프롬프트 필터링 관련 타입 정의
-export interface PromptFilterRequest {
-  prompt: string;
-}
-
-export interface PromptFilterResponse {
-  success: boolean;
-  filtered: boolean;
-  category?: 'APPROPRIATE' | 'JAILBREAK' | 'MEANINGLESS' | 'HARMFUL' | 'ERROR' | 'UNKNOWN';
-  reason?: string;
-  message: string;
-  confidence?: number;
-  error?: string;
-}

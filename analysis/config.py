@@ -35,7 +35,7 @@ SAMPLE_RATIO = {
     'adversarial_harmful': 4,
     'adversarial_benign': 4
 }
-TOTAL_SAMPLES = 200
+TOTAL_SAMPLES = 2500
 
 # Consensus 설정
 CONSENSUS_THRESHOLD = 3  # 5개 중 3개 이상 동의

@@ -8,8 +8,6 @@ import {
   BlockchainCommitRequest,
   BlockchainCommitResponse,
   TestResponse,
-  PromptFilterRequest,
-  PromptFilterResponse,
 } from '@/types';
 
 // API 기본 설정
@@ -67,12 +65,6 @@ export const llmApi = {
   // OpenRouter API 연결 테스트
   testConnection: async (data?: { prompt?: string; provider?: string; model?: string }): Promise<TestResponse> => {
     const response = await api.post('/llm/test', data || {});
-    return response.data;
-  },
-
-  // 프롬프트 필터링
-  filterPrompt: async (request: PromptFilterRequest): Promise<PromptFilterResponse> => {
-    const response: AxiosResponse<PromptFilterResponse> = await api.post('/llm/filter-prompt', request);
     return response.data;
   },
 };

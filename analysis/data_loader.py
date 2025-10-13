@@ -15,17 +15,22 @@ class WildJailbreakLoader:
     def __init__(self):
         """데이터셋 초기화"""
         print(f"Loading dataset: {DATASET_NAME}...")
-        # 스트리밍 방식으로 로드 (train에는 vanilla, eval에는 adversarial)
-        self.train_dataset = load_dataset(DATASET_NAME, 'train', streaming=True, split='train')
-        self.eval_dataset = load_dataset(DATASET_NAME, 'eval', streaming=True, split='train')
-        print(f"Dataset loaded successfully (streaming mode)")
-        print(f"  - train split: vanilla samples")
-        print(f"  - eval split: adversarial samples")
+        # Training set 로드 (모든 4개 카테고리 포함: 261K samples)
+        dataset = load_dataset(DATASET_NAME, 'train', delimiter="\t", keep_default_na=False)
+        self.train_data = dataset['train']
+        print(f"Dataset loaded successfully")
+        print(f"  - Total samples: {len(self.train_data):,}")
+        
+        # data_type 분포 확인
+        from collections import Counter
+        data_types = Counter(self.train_data['data_type'])
+        print(f"  - Category distribution:")
+        for dtype, count in sorted(data_types.items()):
+            print(f"    {dtype}: {count:,}")
         
     def load_and_sample(self, total_samples: int = TOTAL_SAMPLES, 
                        ratio: Dict[str, int] = SAMPLE_RATIO,
-                       random_seed: int = 42,
-                       max_load: int = 25000) -> pd.DataFrame:
+                       random_seed: int = 42) -> pd.DataFrame:
         """
         데이터셋에서 지정된 비율로 샘플링
         
@@ -33,7 +38,6 @@ class WildJailbreakLoader:
             total_samples: 총 샘플 수
             ratio: 각 카테고리별 비율 (vanilla_harmful: vanilla_benign: adversarial_harmful: adversarial_benign)
             random_seed: 랜덤 시드
-            max_load: 스트리밍에서 로드할 최대 샘플 수
             
         Returns:
             pd.DataFrame: 샘플링된 데이터
@@ -59,47 +63,30 @@ class WildJailbreakLoader:
         adversarial_harmful = []
         adversarial_benign = []
         
-        print(f"\nLoading vanilla samples from train split...")
+        print(f"\nProcessing training data...")
         
-        # train split에서 vanilla 샘플 로드
-        for i, example in enumerate(self.train_dataset):
-            if i >= max_load:
-                break
-            
+        # Training set에서 모든 카테고리 분류
+        for example in self.train_data:
             data_type = example.get('data_type', '')
-            prompt = example.get('vanilla', '')
             
             if data_type == 'vanilla_harmful':
+                prompt = example.get('vanilla', '')
                 vanilla_harmful.append({'prompt': prompt, 'is_harmful': True, 'data_type': data_type})
             elif data_type == 'vanilla_benign':
+                prompt = example.get('vanilla', '')
                 vanilla_benign.append({'prompt': prompt, 'is_harmful': False, 'data_type': data_type})
-            
-            if (i + 1) % 2000 == 0:
-                print(f"  Train: {i + 1} samples loaded...")
-        
-        print(f"\nLoading adversarial samples from eval split...")
-        
-        # eval split에서 adversarial 샘플 로드
-        for i, example in enumerate(self.eval_dataset):
-            if i >= max_load:
-                break
-            
-            data_type = example.get('data_type', '')
-            prompt = example.get('adversarial', '')
-            
-            if data_type == 'adversarial_harmful':
+            elif data_type == 'adversarial_harmful':
+                prompt = example.get('adversarial', '')
                 adversarial_harmful.append({'prompt': prompt, 'is_harmful': True, 'data_type': data_type})
             elif data_type == 'adversarial_benign':
+                prompt = example.get('adversarial', '')
                 adversarial_benign.append({'prompt': prompt, 'is_harmful': False, 'data_type': data_type})
-            
-            if (i + 1) % 2000 == 0:
-                print(f"  Eval: {i + 1} samples loaded...")
         
         print(f"\nAvailable samples by category:")
-        print(f"  vanilla_harmful: {len(vanilla_harmful)}")
-        print(f"  vanilla_benign: {len(vanilla_benign)}")
-        print(f"  adversarial_harmful: {len(adversarial_harmful)}")
-        print(f"  adversarial_benign: {len(adversarial_benign)}")
+        print(f"  vanilla_harmful: {len(vanilla_harmful):,}")
+        print(f"  vanilla_benign: {len(vanilla_benign):,}")
+        print(f"  adversarial_harmful: {len(adversarial_harmful):,}")
+        print(f"  adversarial_benign: {len(adversarial_benign):,}")
         
         # 각 카테고리에서 샘플링
         categories = {
@@ -147,19 +134,31 @@ class WildJailbreakLoader:
         print("Dataset Exploration")
         print(f"{'='*80}")
         
-        for split_name, split_data in self.dataset.items():
-            print(f"\nSplit: {split_name}")
-            print(f"  Size: {len(split_data)}")
-            print(f"  Features: {split_data.features}")
-            
-            print(f"\n  First {num_examples} examples:")
-            for i, example in enumerate(split_data.select(range(min(num_examples, len(split_data))))):
-                print(f"\n  Example {i+1}:")
+        print(f"\nTraining Dataset")
+        print(f"  Size: {len(self.train_data):,}")
+        print(f"  Features: {self.train_data.features}")
+        
+        # 각 data_type별로 예시 출력
+        from collections import defaultdict
+        examples_by_type = defaultdict(list)
+        
+        for example in self.train_data:
+            data_type = example.get('data_type', '')
+            if len(examples_by_type[data_type]) < 2:  # 각 타입별 2개씩
+                examples_by_type[data_type].append(example)
+        
+        print(f"\n  Examples by data_type:")
+        for data_type in sorted(examples_by_type.keys()):
+            print(f"\n  [{data_type}]")
+            for i, example in enumerate(examples_by_type[data_type], 1):
+                print(f"    Example {i}:")
                 for key, value in example.items():
-                    if isinstance(value, str) and len(value) > 100:
-                        print(f"    {key}: {value[:100]}...")
+                    if isinstance(value, str) and len(value) > 80:
+                        print(f"      {key}: {value[:80]}...")
+                    elif isinstance(value, list):
+                        print(f"      {key}: {len(value)} items")
                     else:
-                        print(f"    {key}: {value}")
+                        print(f"      {key}: {value}")
 
 
 if __name__ == "__main__":

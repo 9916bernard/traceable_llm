@@ -244,7 +244,7 @@ class BlockchainService:
     #     ]
 
     #region commit hash
-    def commit_hash(self, hash_value: str, prompt: str, response: str, llm_provider: str, model_name: str, timestamp, parameters: dict, consensus_votes: str = "") -> Dict[str, Any]:
+    def commit_hash(self, hash_value: str, prompt: str, response: str, llm_provider: str, model_name: str, timestamp, parameters: dict, consensus_votes: str = "", wait_for_confirmation: bool = True) -> Dict[str, Any]:
         """
         LLM 기록을 블록체인에 커밋
         
@@ -257,10 +257,16 @@ class BlockchainService:
             timestamp: 해시 생성 시 사용된 정확한 timestamp (datetime 객체)
             parameters: LLM 파라미터 (dict)
             consensus_votes: Consensus 투표 결과 (예: "3/5")
+            wait_for_confirmation: True면 블록 confirmation까지 대기, False면 TX submission만 (default: True)
         
         Returns:
-            Dict: 트랜잭션 정보
+            Dict: 트랜잭션 정보 (latency 정보 포함)
         """
+        import time
+        
+        # 전체 커밋 시작 시간
+        total_start_time = time.time()
+        
         try:
             # 해시 생성 시 사용된 정확한 timestamp를 ISO format string으로 변환
             # 해시 계산에 사용된 것과 동일한 형식
@@ -328,19 +334,62 @@ class BlockchainService:
             # 트랜잭션 서명
             signed_txn = self.w3.eth.account.sign_transaction(transaction, self.private_key)
             
-            # 트랜잭션 전송
+            # 트랜잭션 전송 시작 시간
+            tx_submission_start = time.time()
             tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+            tx_submission_time = time.time() - tx_submission_start
             
-            # 트랜잭션 영수증 대기
+            # wait_for_confirmation이 False면 여기서 바로 리턴 (pending 상태)
+            if not wait_for_confirmation:
+                total_commit_time = time.time() - total_start_time
+                
+                # Gas 비용 추정 (실제 사용량은 confirmation 후에 알 수 있음)
+                estimated_gas_cost_wei = gas_limit * gas_price
+                estimated_gas_cost_eth = self.w3.from_wei(estimated_gas_cost_wei, 'ether')
+                
+                return {
+                    'transaction_hash': tx_hash.hex(),
+                    'status': 'pending',
+                    'gas_limit': gas_limit,
+                    'gas_price': gas_price,
+                    'gas_price_gwei': self.w3.from_wei(gas_price, 'gwei'),
+                    'estimated_gas_cost_wei': estimated_gas_cost_wei,
+                    'estimated_gas_cost_eth': float(estimated_gas_cost_eth),
+                    'timing': {
+                        'tx_submission_time': tx_submission_time,
+                        'total_commit_time': total_commit_time
+                    },
+                    'message': 'Transaction submitted successfully. Waiting for confirmation...'
+                }
+            
+            # wait_for_confirmation이 True면 confirmation까지 대기
+            tx_confirmation_start = time.time()
             tx_receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
+            tx_confirmation_time = time.time() - tx_confirmation_start
             
             # DB 업데이트 로직 제거됨 - Etherscan 전용 시스템
+            
+            # 총 커밋 시간 계산
+            total_commit_time = time.time() - total_start_time
+            
+            # Gas 비용 계산 (ETH 단위)
+            gas_cost_wei = tx_receipt.gasUsed * gas_price
+            gas_cost_eth = self.w3.from_wei(gas_cost_wei, 'ether')
             
             return {
                 'transaction_hash': tx_hash.hex(),
                 'block_number': tx_receipt.blockNumber,
                 'gas_used': tx_receipt.gasUsed,
-                'status': 'success'
+                'gas_price': gas_price,
+                'gas_price_gwei': self.w3.from_wei(gas_price, 'gwei'),
+                'gas_cost_wei': gas_cost_wei,
+                'gas_cost_eth': float(gas_cost_eth),
+                'status': 'success',
+                'timing': {
+                    'tx_submission_time': tx_submission_time,
+                    'tx_confirmation_time': tx_confirmation_time,
+                    'total_commit_time': total_commit_time
+                }
             }
             
         except Exception as e:
@@ -423,8 +472,13 @@ class BlockchainService:
             transaction_hash: 검증할 트랜잭션 해시
         
         Returns:
-            Dict: 검증 결과
+            Dict: 검증 결과 (latency 정보 포함)
         """
+        import time
+        
+        # 전체 검증 시작 시간
+        total_verification_start = time.time()
+        
         try:
             # Sepolia Etherscan API URL
             etherscan_url = "https://api-sepolia.etherscan.io/api"
@@ -438,9 +492,12 @@ class BlockchainService:
                 'apikey': api_key
             }
             
+            # API 호출 시간 측정
+            api_call_start = time.time()
             response = requests.get(etherscan_url, params=params, timeout=20)  # 10초 → 20초 (200% 증가)
             response.raise_for_status()
             data = response.json()
+            api_call_time_tx = time.time() - api_call_start
             
             # 디버깅을 위한 로그 (개발 환경에서만)
             print(f"Etherscan API 응답 (트랜잭션): {data}")
@@ -473,9 +530,12 @@ class BlockchainService:
                 'apikey': api_key
             }
             
+            # API 호출 시간 측정
+            api_call_receipt_start = time.time()
             receipt_response = requests.get(etherscan_url, params=receipt_params, timeout=20)  # 10초 → 20초 (200% 증가)
             receipt_response.raise_for_status()
             receipt_data = receipt_response.json()
+            api_call_time_receipt = time.time() - api_call_receipt_start
             
             # 디버깅을 위한 로그 (개발 환경에서만)
             print(f"Etherscan API 응답 (영수증): {receipt_data}")
@@ -513,6 +573,7 @@ class BlockchainService:
             input_data_hex = tx_result.get('input', '0x')
             decoded_input_data = None
             hash_verification = None
+            hash_verification_time = 0
             
             try:
                 if input_data_hex and input_data_hex != '0x':
@@ -521,9 +582,14 @@ class BlockchainService:
                     
                     # 해시 역계산 검증
                     if decoded_input_data:
+                        hash_verification_start = time.time()
                         hash_verification = self._verify_hash_from_input_data(decoded_input_data)
+                        hash_verification_time = time.time() - hash_verification_start
             except Exception as e:
                 print(f"Input Data 디코딩/검증 오류: {str(e)}")
+            
+            # 총 검증 시간 계산
+            total_verification_time = time.time() - total_verification_start
             
             return {
                 'exists': True,
@@ -537,7 +603,13 @@ class BlockchainService:
                 'value': tx_result.get('value'),
                 'etherscan_url': f"https://sepolia.etherscan.io/tx/{transaction_hash}",
                 'input_data': decoded_input_data,
-                'hash_verification': hash_verification
+                'hash_verification': hash_verification,
+                'timing': {
+                    'api_call_time_tx': api_call_time_tx,
+                    'api_call_time_receipt': api_call_time_receipt,
+                    'hash_verification_time': hash_verification_time,
+                    'total_verification_time': total_verification_time
+                }
             }
             
         except requests.exceptions.RequestException as e:

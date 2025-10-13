@@ -3,59 +3,10 @@ from datetime import datetime
 from app.services.llm_service import LLMService
 from app.services.hash_service import HashService
 from app.services.blockchain_service import BlockchainService
-from app.services.prompt_filter_service import PromptFilterService
 from app.services.consensus_service import ConsensusService
 from config import Config
 
 llm_bp = Blueprint('llm', __name__)
-
-@llm_bp.route('/filter-prompt', methods=['POST'])
-def filter_prompt():
-    """
-    프롬프트 전처리 필터링
-    """
-    try:
-        data = request.get_json()
-        
-        if not data or 'prompt' not in data:
-            return jsonify({'error': '프롬프트가 필요합니다'}), 400
-        
-        prompt = data['prompt']
-        
-        if not prompt or not prompt.strip():
-            return jsonify({'error': '빈 프롬프트입니다'}), 400
-        
-        # 프롬프트 필터링 서비스 호출
-        filter_service = PromptFilterService()
-        filter_result = filter_service.filter_prompt(prompt)
-        
-        if not filter_result['is_appropriate']:
-            # 부적절한 프롬프트인 경우 거부 메시지 반환
-            rejection_message = filter_service.get_rejection_message(
-                filter_result['category'], 
-                filter_result['reason']
-            )
-            
-            return jsonify({
-                'success': False,
-                'filtered': True,
-                'category': filter_result['category'],
-                'reason': filter_result['reason'],
-                'message': rejection_message,
-                'confidence': filter_result['confidence']
-            }), 200
-        
-        # 적절한 프롬프트인 경우 승인
-        return jsonify({
-            'success': True,
-            'filtered': False,
-            'category': filter_result['category'],
-            'message': '프롬프트가 적합합니다. 해당 프롬프트와 아웃풋을 커밋하시겠습니까?',
-            'confidence': filter_result['confidence']
-        }), 200
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 @llm_bp.route('/generate', methods=['POST'])
 def generate_with_verification():
@@ -136,12 +87,13 @@ def generate_with_verification():
                 model,
                 timestamp,  # datetime 객체 그대로 전달
                 parameters,  # 파라미터 전달
-                consensus_votes_str
+                consensus_votes_str,
+                wait_for_confirmation=False  # TX submission만, confirmation은 대기하지 않음
             )
             result['blockchain_commit'] = commit_result
             
-            # 성공적으로 커밋된 경우, 로컬 해시 대신 트랜잭션 해시를 반환
-            if commit_result.get('status') == 'success' and commit_result.get('transaction_hash'):
+            # 성공적으로 커밋된 경우 (pending 포함), 로컬 해시 대신 트랜잭션 해시를 반환
+            if commit_result.get('status') in ['success', 'pending'] and commit_result.get('transaction_hash'):
                 result['hash_value'] = commit_result['transaction_hash']
         
         return jsonify(result), 200

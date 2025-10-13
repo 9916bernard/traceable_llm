@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useMutation } from 'react-query';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import { LLMRequest, LLMResponse, TestResponse, PromptFilterResponse, LoadingStep, ConsensusResult } from '@/types';
+import { LLMRequest, LLMResponse, LoadingStep, ConsensusResult } from '@/types';
 import { llmApi } from '@/services/api';
 import { formatResponseTime, copyToClipboard, getEtherscanUrl } from '@/utils';
 import ConsensusLoading from './ConsensusLoading';
@@ -20,9 +20,6 @@ interface FormData {
 export default function LLMGenerator({ models }: LLMGeneratorProps) {
   const [result, setResult] = useState<LLMResponse | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [filterResult, setFilterResult] = useState<PromptFilterResponse | null>(null);
-  const [isFiltering, setIsFiltering] = useState(false);
-  const [showCommitButton, setShowCommitButton] = useState(false);
   const [currentStep, setCurrentStep] = useState<LoadingStep>('idle');
   const [consensusResult, setConsensusResult] = useState<ConsensusResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -73,43 +70,6 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
       setIsGenerating(false);
     },
   });
-
-  // 프롬프트 필터링 뮤테이션
-  const filterMutation = useMutation(
-    (prompt: string) => llmApi.filterPrompt({ prompt }),
-    {
-      onMutate: () => {
-        setIsFiltering(true);
-        setFilterResult(null);
-        setShowCommitButton(false);
-      },
-      onSuccess: (data) => {
-        setFilterResult(data);
-        if (data.success && !data.filtered) {
-          setShowCommitButton(true);
-          toast.success('Prompt is appropriate!');
-        } else {
-          setShowCommitButton(false);
-          toast.error(data.message);
-        }
-      },
-      onError: (error: any) => {
-        const errorMessage = error.response?.data?.error || error.message;
-        setFilterResult({
-          success: false,
-          filtered: true,
-          message: `Filtering error: ${errorMessage}`,
-          error: errorMessage
-        });
-        setShowCommitButton(false);
-        toast.error(`Filtering failed: ${errorMessage}`);
-      },
-      onSettled: () => {
-        setIsFiltering(false);
-      },
-    }
-  );
-
 
   // 로딩 단계 시뮬레이션
   const simulateLoadingSteps = async () => {
@@ -177,208 +137,93 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
           <textarea
             {...register('prompt', { required: 'Please enter a prompt' })}
             rows={4}
-            className={`textarea ${showCommitButton ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+            className="textarea"
             placeholder="Enter a prompt to send to the LLM..."
-            disabled={showCommitButton}
           />
           {errors.prompt && (
             <p className="mt-1 text-sm text-error-600">{errors.prompt.message}</p>
           )}
         </div>
 
-        {/* LLM 설정 섹션 - 필터 통과 후에만 표시 */}
-        {showCommitButton && (
-          <div className="border-t pt-6 space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900">LLM Settings</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* LLM 제공자 선택 */}
-              <div>
-                <label className="label">LLM Provider</label>
-                <select
-                  {...register('provider', { required: 'Please select an LLM provider' })}
-                  className="select"
-                >
-                  {models && Object.keys(models).map((provider) => (
-                    <option key={provider} value={provider}>
-                      {provider === 'openai' ? 'OpenAI' : 
-                       provider === 'grok' ? 'Llama' :
-                       provider === 'claude' ? 'Claude' :
-                       provider === 'gemini' ? 'Gemini' :
-                       provider === 'deepseek' ? 'DeepSeek' : provider}
-                    </option>
-                  ))}
-                </select>
-                {errors.provider && (
-                  <p className="mt-1 text-sm text-error-600">{errors.provider.message}</p>
-                )}
-              </div>
+        {/* LLM 설정 섹션 */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-900">LLM Settings</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* LLM 제공자 선택 */}
+            <div>
+              <label className="label">LLM Provider</label>
+              <select
+                {...register('provider', { required: 'Please select an LLM provider' })}
+                className="select"
+              >
+                {models && Object.keys(models).map((provider) => (
+                  <option key={provider} value={provider}>
+                    {provider === 'openai' ? 'OpenAI' : 
+                     provider === 'grok' ? 'Llama' :
+                     provider === 'claude' ? 'Claude' :
+                     provider === 'gemini' ? 'Gemini' :
+                     provider === 'deepseek' ? 'DeepSeek' : provider}
+                  </option>
+                ))}
+              </select>
+              {errors.provider && (
+                <p className="mt-1 text-sm text-error-600">{errors.provider.message}</p>
+              )}
+            </div>
 
-              {/* 모델 선택 */}
-              <div>
-                <label className="label">Model</label>
-                <select
-                  {...register('model', { required: 'Please select a model' })}
-                  className="select"
-                >
-                  {models && models[selectedProvider]?.map((model) => (
-                    <option key={model} value={model}>
-                      {model}
-                    </option>
-                  ))}
-                </select>
-                {errors.model && (
-                  <p className="mt-1 text-sm text-error-600">{errors.model.message}</p>
-                )}
-              </div>
+            {/* 모델 선택 */}
+            <div>
+              <label className="label">Model</label>
+              <select
+                {...register('model', { required: 'Please select a model' })}
+                className="select"
+              >
+                {models && models[selectedProvider]?.map((model) => (
+                  <option key={model} value={model}>
+                    {model}
+                  </option>
+                ))}
+              </select>
+              {errors.model && (
+                <p className="mt-1 text-sm text-error-600">{errors.model.message}</p>
+              )}
             </div>
           </div>
-        )}
-
+        </div>
 
         {/* 제출 버튼 */}
-        <div className="flex justify-between">
-          {!showCommitButton ? (
-            <div className="text-sm text-gray-500">
-              Please enter a prompt and proceed with filtering.
-            </div>
-          ) : (
-            <div className="text-sm text-gray-500 flex items-center">
-              <span className="mr-2">✓</span>
-              Prompt has been approved. Click the reset button to use a different prompt.
-            </div>
-          )}
+        <div className="flex justify-end space-x-3">
+          <button
+            type="button"
+            onClick={() => {
+              reset();
+              setResult(null);
+              setCurrentStep('idle');
+              setConsensusResult(null);
+              setError(null);
+            }}
+            className="btn-outline"
+            disabled={isGenerating}
+          >
+            Reset
+          </button>
           
-          <div className="flex space-x-3">
-            <button
-              type="button"
-              onClick={() => {
-                reset();
-                setFilterResult(null);
-                setShowCommitButton(false);
-                setResult(null);
-                setCurrentStep('idle');
-                setConsensusResult(null);
-                setError(null);
-              }}
-              className="btn-outline"
-              disabled={isGenerating || isFiltering}
-            >
-              {showCommitButton ? 'New Prompt' : 'Reset'}
-            </button>
-            
-            {!showCommitButton ? (
-              <button
-                type="button"
-                onClick={() => {
-                  const currentData = watch();
-                  if (!currentData.prompt) {
-                    toast.error('Please enter a prompt');
-                    return;
-                  }
-                  filterMutation.mutate(currentData.prompt);
-                }}
-                className="btn-primary"
-                disabled={isGenerating || isFiltering}
-              >
-                {isFiltering ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="loading-spinner" />
-                    <span>Filtering...</span>
-                  </div>
-                ) : (
-                  'Filter Prompt'
-                )}
-              </button>
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <div className="flex items-center space-x-2">
+                <div className="loading-spinner" />
+                <span>Generating...</span>
+              </div>
             ) : (
-              <button
-                type="submit"
-                className="btn-primary"
-                disabled={isGenerating || isFiltering}
-              >
-                {isGenerating ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="loading-spinner" />
-                    <span>Generating...</span>
-                  </div>
-                ) : (
-                  'Generate LLM Response'
-                )}
-              </button>
+              'Generate LLM Response'
             )}
-          </div>
+          </button>
         </div>
       </form>
-
-      {/* 프롬프트 필터링 결과 표시 */}
-      {filterResult && (
-        <div className="space-y-4 fade-in">
-          <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Prompt Filtering Result</h3>
-            
-            <div className={`p-4 rounded-lg ${
-              filterResult.success && !filterResult.filtered
-                ? 'bg-green-50 border border-green-200' 
-                : 'bg-red-50 border border-red-200'
-            }`}>
-              <div className="flex items-center space-x-2 mb-2">
-                <span className={`w-3 h-3 rounded-full ${
-                  filterResult.success && !filterResult.filtered ? 'bg-green-500' : 'bg-red-500'
-                }`} />
-                <span className={`font-medium ${
-                  filterResult.success && !filterResult.filtered ? 'text-green-800' : 'text-red-800'
-                }`}>
-                      {filterResult.success && !filterResult.filtered ? 'Prompt Approved' : 'Prompt Rejected'}
-                </span>
-                {filterResult.category && (
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    filterResult.category === 'APPROPRIATE' 
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {filterResult.category}
-                  </span>
-                )}
-              </div>
-              
-              <p className={`text-sm ${
-                filterResult.success && !filterResult.filtered ? 'text-green-700' : 'text-red-700'
-              }`}>
-                {filterResult.message}
-              </p>
-              
-              {filterResult.reason && (
-                <div className="mt-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Filtering Reason:
-                  </label>
-                  <div className="text-sm text-gray-600">
-                    {filterResult.reason}
-                  </div>
-                </div>
-              )}
-              
-              {filterResult.confidence && (
-                <div className="mt-2">
-                  <span className="text-sm text-gray-600">
-                    Confidence: {(filterResult.confidence * 100).toFixed(1)}%
-                  </span>
-                </div>
-              )}
-              
-              {filterResult.error && (
-                <div className="mt-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Error Message:
-                  </label>
-                  <div className="code-block bg-white text-red-600">
-                    {filterResult.error}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
 
       {/* 로딩 상태 표시 */}
@@ -489,10 +334,16 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
             {result.blockchain_commit && (
               <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                 <h4 className="font-medium text-gray-900 mb-2">Blockchain Commit Result</h4>
-                {result.blockchain_commit.status === 'success' ? (
+                {result.blockchain_commit.status === 'success' || result.blockchain_commit.status === 'pending' ? (
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2">
-                      <span className="badge-success">Success</span>
+                      {result.blockchain_commit.status === 'success' ? (
+                        <span className="badge-success">Confirmed</span>
+                      ) : (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                          Pending Confirmation
+                        </span>
+                      )}
                     </div>
                     {result.blockchain_commit.transaction_hash && (
                       <div>
@@ -505,6 +356,11 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
                         >
                           {result.blockchain_commit.transaction_hash.substring(0, 20)}...
                         </a>
+                      </div>
+                    )}
+                    {result.blockchain_commit.status === 'pending' && (
+                      <div className="text-sm text-gray-600 italic">
+                        Transaction submitted successfully. Waiting for block confirmation (~10-15 seconds)...
                       </div>
                     )}
                     {result.blockchain_commit.block_number && (
