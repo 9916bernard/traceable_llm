@@ -1,97 +1,276 @@
-# LLM Verification System
+# LLM Verification System - MVP Implementation
 
-LLM 출력의 진위를 검증하기 위한 블록체인 기반 인증 시스템
+A two-layer blockchain framework for traceable and immutable LLM outputs. This repository contains the Minimum Viable Prototype (MVP) for the research paper "Traceable and Immutable LLM Generated Contents through Blockchain Framework."
 
-## 프로젝트 개요
+## Overview
 
-대형 언어 모델(LLM)이 더욱 신뢰할 수 있게 됨에 따라, 그들의 출력이 LLM에서 나온다는 이유만으로 진실로 받아들여질 수 있습니다. 이는 정치를 포함한 사회의 다양한 분야에서 악용될 수 있으므로, 주어진 답변이 실제로 LLM에서 나온 것인지 검증할 수 있는 인증 시스템이 필요합니다.
+This framework addresses LLM output provenance verification through:
 
-## 기술 스택
+1. **Off-chain PoA Layer**: Consensus filtering using 5 independent LLMs (GPT, Claude, Gemini, Llama, DeepSeek)
+2. **On-chain Anchoring Layer**: Immutable storage on Ethereum Sepolia testnet
 
-### Backend
-- **언어**: Python
-- **프레임워크**: Flask
-- **데이터베이스**: PostgreSQL
-- **배포**: AWS Lightsail
+### Key Results
 
-### Frontend
-- **언어**: TypeScript
-- **프레임워크**: React
-- **배포**: Vercel
+- **85.36%** consensus accuracy (vs. 76.65% single model average)
+- **10.17s** average blockchain commit latency
+- **0.41s** verification latency
 
-### Blockchain
-- **네트워크**: Ethereum Public Testnet
-- **스마트 컨트랙트**: Solidity
-- **로컬 테스트**: Hardhat
+---
 
-## 프로젝트 구조
+## Project Structure
 
 ```
 llm_verification/
-├── backend/                 # Flask 백엔드 서버
-│   ├── app/
-│   │   ├── __init__.py
-│   │   ├── models/         # 데이터베이스 모델
-│   │   ├── routes/         # API 라우트
-│   │   ├── services/       # 비즈니스 로직
-│   │   └── utils/          # 유틸리티 함수
-│   ├── requirements.txt
+│
+├── backend/                          # Flask API Server
+│   ├── app/services/
+│   │   ├── consensus_service.py      # Algorithm 1: k-of-n PoA Consensus
+│   │   ├── hash_service.py           # Algorithm 2: Canonicalization & HMAC Hash
+│   │   ├── blockchain_service.py     # Algorithm 3: Anchoring Workflow
+│   │   │                             # Contract Interface 1 & 2
+│   │   └── llm_service.py            # LLM API Integration (OpenRouter)
+│   ├── app/routes/
+│   │   ├── llm_routes.py             # /generate, /consensus
+│   │   └── verification_routes.py    # /verify
+│   ├── app.py                        # Entry point
 │   └── config.py
-├── frontend/               # React 프론트엔드
-│   ├── src/
-│   │   ├── components/     # React 컴포넌트
-│   │   ├── pages/          # 페이지 컴포넌트
-│   │   ├── services/       # API 서비스
-│   │   ├── types/          # TypeScript 타입 정의
-│   │   └── utils/          # 유틸리티 함수
-│   ├── package.json
-│   └── tsconfig.json
-├── smart-contracts/        # Solidity 스마트 컨트랙트
+│
+├── frontend/                         # Next.js/React UI
+│   └── src/
+│       ├── components/
+│       │   ├── GenerateSection.tsx
+│       │   ├── VerificationSection.tsx
+│       │   └── ConsensusDisplay.tsx
+│       └── pages/index.tsx
+│
+├── smart-contracts/
 │   ├── contracts/
-│   ├── scripts/
-│   ├── test/
-│   └── hardhat.config.js
-├── database/              # 데이터베이스 스키마 및 마이그레이션
-│   ├── migrations/
-│   └── schema.sql
-├── docs/                  # 문서
-└── deployment/            # 배포 설정
-    ├── vercel/
-    └── aws/
+│   │   └── LLMVerification.sol       # Smart contract (storeLLMRecord, getLLMRecord)
+│   └── artifacts/                    # Compiled ABIs
+│
+├── analysis/
+│   ├── experiment_runner.py          # Algorithm 5: Consensus Performance Evaluation
+│   ├── result_analyzer.py            # Statistical analysis
+│   └── data_loader.py                # WildJailbreak dataset (2,500 samples)
+│
+└── test_blockchain_performance.py    # Algorithm 6: Blockchain Performance Test
 ```
 
-## 주요 기능
+---
 
-1. **LLM API 연동**: OpenAI, Anthropic 등의 LLM API 호출
-2. **해시 생성**: LLM 파라미터와 타임스탬프를 이용한 SHA-256 해시 생성
-3. **블록체인 커밋**: 생성된 해시를 이더리움 테스트넷에 저장
-4. **검증 시스템**: 해시를 통한 LLM 출력의 진위 검증
-5. **웹 인터페이스**: 사용자 친화적인 검증 인터페이스
+## Installation
 
-## 설치 및 실행
+### Prerequisites
 
-### Backend
+- Python 3.8+, Node.js 16+
+- Ethereum wallet with Sepolia testnet ETH ([faucet](https://sepoliafaucet.com/))
+
+### 1. Backend
+
 ```bash
 cd backend
 pip install -r requirements.txt
-python app.py
 ```
 
-### Frontend
-```bash
-cd frontend
-npm install
-npm run dev
+Create `.env`:
+```env
+OPENROUTER_API_KEY=your_key
+SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_PROJECT_ID
+PRIVATE_KEY=your_wallet_private_key
+CONTRACT_ADDRESS=deployed_contract_address
+HMAC_SECRET_KEY=your_secret
 ```
 
-### Smart Contracts
+### 2. Smart Contracts
+
 ```bash
 cd smart-contracts
 npm install
 npx hardhat compile
-npx hardhat test
+npx hardhat run scripts/deploy.js --network sepolia
 ```
 
-## 라이선스
+### 3. Frontend
+
+```bash
+cd frontend
+npm install
+```
+
+Create `.env.local`:
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5001
+```
+
+---
+
+## Usage
+
+```bash
+# Terminal 1: Backend
+cd backend
+python app.py --port 5001
+
+# Terminal 2: Frontend
+cd frontend
+npm run dev
+```
+
+Open http://localhost:3000
+
+### Workflow
+
+1. User enters prompt → Select LLM provider/model
+2. **PoA Layer**: 5 models vote (3-of-5 threshold)
+3. **Anchoring**: HMAC-SHA256 hash → Blockchain commit
+4. **Verification**: Transaction hash → Integrity check
+
+---
+
+## Algorithm Implementations
+
+### Algorithm 1: k-of-n Consensus
+**File**: `backend/app/services/consensus_service.py`
+- Parallel calls to 5 LLMs via ThreadPoolExecutor
+- Safety prompt template with True/False response
+- 3-of-5 threshold, 60s timeout
+
+### Algorithm 2: Canonicalization & Hash
+**File**: `backend/app/services/hash_service.py`
+- HMAC-SHA256 with secret key (security enhancement over plain SHA256)
+- Canonicalized JSON (`sort_keys=True`)
+- Includes: provider, model, prompt, response, parameters, timestamp, consensus votes
+
+### Algorithm 3: Anchoring Workflow
+**File**: `backend/app/services/blockchain_service.py` → `commit_hash()`
+- Gas estimation with 20% buffer
+- Dynamic gas price adjustment for Sepolia
+- Latency tracking: submission + confirmation
+
+### Contract Interface 1: On-Chain Commit
+**File**: `smart-contracts/contracts/LLMVerification.sol` → `storeLLMRecord()`
+- Stores: hash, prompt, response, provider, model, timestamp, parameters, consensus_votes
+- Emits `LLMRecordStored` event
+
+### Contract Interface 2: On-Chain Verification
+**File**: `backend/app/services/blockchain_service.py` → `verify_transaction_hash()`
+- Fetches transaction via Web3 RPC
+- Decodes input data using ABI
+- Recalculates HMAC hash → Compares with original
+
+### Algorithm 5: Consensus Evaluation
+**File**: `analysis/experiment_runner.py`
+- WildJailbreak dataset (2,500 samples)
+- Metrics: Accuracy, Precision, Recall, F1
+- Confusion matrices per model
+
+### Algorithm 6: Blockchain Performance
+**File**: `test_blockchain_performance.py`
+- 75 transactions on Sepolia
+- Tracks: submission time, confirmation time, gas usage
+
+---
+
+## Performance Results
+
+### Consensus Layer
+
+| Model | Accuracy | Precision | Recall | F1 |
+|-------|----------|-----------|--------|-----|
+| **Consensus (5 models)** | **85.36%** | **92.58%** | **76.88%** | **84.00%** |
+| DeepSeek Chat | 84.68% | 93.39% | 74.64% | 82.97% |
+| Claude 3 Haiku | 82.64% | 78.86% | 84.32% | 81.49% |
+| Gemini 2.5 Flash | 81.64% | 93.22% | 68.24% | 78.90% |
+| GPT-3.5 Turbo | 75.76% | 59.70% | 98.00% | 74.20% |
+| Llama 3.1 8B | 58.52% | 96.18% | 38.24% | 54.66% |
+
+**Improvement**: 8.71pp over single model average (76.65% → 85.36%)
+
+### Blockchain Layer
+
+- **Average commit latency**: 10.17s (median: 11.08s)
+- **Verification latency**: 0.41s (mean)
+- **Gas usage**: ~200,000 gas per transaction
+
+---
+
+## API Endpoints
+
+### POST /api/llm/generate
+Generate LLM response with consensus validation and blockchain anchoring.
+
+**Request**:
+```json
+{
+  "prompt": "Your question",
+  "provider": "openai",
+  "model": "gpt-3.5-turbo"
+}
+```
+
+**Response**:
+```json
+{
+  "response": "LLM output",
+  "transaction_hash": "0x...",
+  "hash": "abc123...",
+  "consensus": {
+    "passed": true,
+    "safe_votes": 4,
+    "harmful_votes": 1
+  }
+}
+```
+
+### POST /api/verification/verify
+Verify transaction hash and check data integrity.
+
+**Request**:
+```json
+{
+  "transaction_hash": "0x..."
+}
+```
+
+**Response**:
+```json
+{
+  "verified": true,
+  "block_number": 12345,
+  "hash_verification": {
+    "verified": true,
+    "original_hash": "abc123...",
+    "calculated_hash": "abc123..."
+  }
+}
+```
+
+---
+
+## Security Features
+
+- **HMAC-SHA256**: Secret key prevents unauthorized hash generation
+- **Immutable Storage**: Blockchain prevents tampering
+- **Multi-Model Consensus**: Reduces single-point failure
+- **Public Auditability**: Etherscan verification
+
+---
+
+## Limitations
+
+1. Relies on LLM API providers (OpenRouter)
+2. Single-generation scope (multi-turn requires external storage)
+3. On-chain plain text storage (privacy concern)
+
+**Future Work**: Layer-2 integration, IPFS storage, adaptive thresholding
+
+---
+
+## License
 
 MIT License
+
+## Contact
+
+Sungheon Lee - spl5637@psu.edu
+Pennsylvania State University
