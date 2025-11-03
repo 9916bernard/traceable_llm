@@ -1,0 +1,78 @@
+================================================================================
+BLOCKCHAIN PERFORMANCE TEST REPORT
+================================================================================
+Generated: 2025-10-10 00:23:20
+Total Tests: 100
+Successful Tests: 75
+Failed Tests: 25
+
+================================================================================
+COMMIT LATENCY (Sepolia Testnet)
+================================================================================
+Average:        10.167s
+Median:         11.076s
+Std Dev:        5.912s
+Min:            1.397s
+Max:            25.821s
+Q1 (25%):       4.296s
+Q3 (75%):       13.538s
+
+  Breakdown:
+    - TX Submission (Avg):   0.058s
+    - TX Confirmation (Avg): 9.786s
+
+================================================================================
+VERIFICATION LATENCY (Etherscan API)
+================================================================================
+Average:        0.409s
+Median:         0.335s
+Std Dev:        0.249s
+Min:            0.275s
+Max:            2.007s
+
+================================================================================
+GAS USAGE AND COSTS (Sepolia Testnet)
+================================================================================
+Gas Used (Avg):      510662 gas
+Gas Used (Min/Max):  309772 / 1184248 gas
+Gas Price (Avg):     1.00 Gwei
+Cost per TX (Avg):   0.000511 ETH
+Total Cost:          0.038300 ETH
+
+================================================================================
+LAYER 2 MAINNET COST ESTIMATION
+================================================================================
+ETH Price (at test time): $4355.54 USD
+
+Ethereum L1 Mainnet (estimated):
+  - Cost per TX: $1.7484 USD
+
+Layer 2 Networks (estimated):
+  ARBITRUM:
+    - Cost per TX: $0.0874 USD
+    - Cost Reduction: 95.0%
+  OPTIMISM:
+    - Cost per TX: $0.1049 USD
+    - Cost Reduction: 94.0%
+  BASE:
+    - Cost per TX: $0.0874 USD
+    - Cost Reduction: 95.0%
+  POLYGON:
+    - Cost per TX: $0.0175 USD
+    - Cost Reduction: 99.0%
+  ZKSYNC:
+    - Cost per TX: $0.0525 USD
+    - Cost Reduction: 97.0%
+
+Cheapest Option: POLYGON
+  - Cost: $0.0175 USD per TX
+
+================================================================================
+KEY FINDINGS
+================================================================================
+1. Average commit latency: 10.17s
+2. Average verification latency: 0.41s
+3. Verification is ~24.9x faster than commit
+4. Most commit time spent on: TX confirmation (96.3%)
+5. Average gas cost per TX: 0.000511 ETH
+================================================================================

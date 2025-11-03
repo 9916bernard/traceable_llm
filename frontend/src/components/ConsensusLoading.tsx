@@ -29,36 +29,29 @@ const stepDescriptions: Record<LoadingStep, string> = {
 
 export default function ConsensusLoading({ currentStep, consensusResult, error }: ConsensusLoadingProps) {
   const getStepIcon = (step: LoadingStep) => {
-    switch (step) {
-      case 'idle':
-        return '⏳';
-      case 'consensus_validation':
-        return '🤖';
-      case 'llm_generation':
-        return '⚡';
-      case 'hash_creation':
-        return '🔐';
-      case 'blockchain_commit':
-        return '⛓️';
-      case 'completed':
-        return '✅';
-      case 'error':
-        return '❌';
-      default:
-        return '⏳';
-    }
+    return (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        {step === 'completed' ? (
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        ) : step === 'error' ? (
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        ) : (
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        )}
+      </svg>
+    );
   };
 
   const getStepColor = (step: LoadingStep) => {
     switch (step) {
       case 'completed':
-        return 'text-green-600';
+        return 'text-emerald-900';
       case 'error':
-        return 'text-red-600';
+        return 'text-red-900';
       case 'idle':
         return 'text-gray-500';
       default:
-        return 'text-blue-600';
+        return 'text-blue-900';
     }
   };
 
@@ -78,20 +71,22 @@ export default function ConsensusLoading({ currentStep, consensusResult, error }
 
   return (
     <div className="space-y-6">
-      {/* 현재 단계 표시 */}
+      {/* Current step display */}
       <div className="text-center">
-        <div className={`text-4xl mb-2 ${getStepColor(currentStep)}`}>
-          {getStepIcon(currentStep)}
+        <div className={`flex items-center justify-center mb-3 ${getStepColor(currentStep)}`}>
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-xl flex items-center justify-center shadow-lg">
+            {getStepIcon(currentStep)}
+          </div>
         </div>
-        <h3 className={`text-lg font-semibold ${getStepColor(currentStep)}`}>
+        <h3 className={`text-xl font-bold ${getStepColor(currentStep)}`}>
           {stepMessages[currentStep]}
         </h3>
-        <p className="text-sm text-gray-600 mt-1">
+        <p className="text-sm text-gray-600 mt-2">
           {stepDescriptions[currentStep]}
         </p>
       </div>
 
-      {/* 진행 단계 표시 */}
+      {/* Progress steps */}
       <div className="space-y-3">
         {steps.map((step, index) => {
           const isActive = isStepActive(step.key);
@@ -100,30 +95,36 @@ export default function ConsensusLoading({ currentStep, consensusResult, error }
           return (
             <div
               key={step.key}
-              className={`flex items-center space-x-3 p-3 rounded-lg transition-all duration-300 ${
+              className={`flex items-center space-x-4 p-4 rounded-xl transition-all duration-300 ${
                 isCurrent
-                  ? 'bg-blue-50 border border-blue-200'
+                  ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 shadow-md'
                   : isActive
-                  ? 'bg-green-50 border border-green-200'
-                  : 'bg-gray-50 border border-gray-200'
+                  ? 'bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-200'
+                  : 'bg-white border border-gray-200'
               }`}
             >
-              <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+              <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold shadow-sm ${
                 isCurrent
-                  ? 'bg-blue-500 text-white'
+                  ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white'
                   : isActive
-                  ? 'bg-green-500 text-white'
-                  : 'bg-gray-300 text-gray-600'
+                  ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white'
+                  : 'bg-gray-200 text-gray-600'
               }`}>
-                {isCurrent ? '⏳' : isActive ? '✓' : index + 1}
+                {isActive && !isCurrent ? (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  index + 1
+                )}
               </div>
               <div className="flex-1">
-                <div className={`font-medium ${
-                  isCurrent ? 'text-blue-800' : isActive ? 'text-green-800' : 'text-gray-600'
+                <div className={`font-semibold ${
+                  isCurrent ? 'text-blue-900' : isActive ? 'text-emerald-900' : 'text-gray-600'
                 }`}>
                   {step.label}
                 </div>
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-gray-500 mt-1">
                   {stepDescriptions[step.key]}
                 </div>
               </div>
@@ -137,53 +138,53 @@ export default function ConsensusLoading({ currentStep, consensusResult, error }
         })}
       </div>
 
-      {/* Consensus 결과 표시 */}
+      {/* Consensus results */}
       {consensusResult && (
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-          <h4 className="font-medium text-gray-900 mb-3">Consensus Validation Results</h4>
-          <div className="grid grid-cols-2 gap-4 text-sm">
+        <div className="mt-6 p-5 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200 shadow-sm">
+          <h4 className="font-bold text-gray-900 mb-4">Consensus Validation Results</h4>
+          <div className="grid grid-cols-2 gap-4 text-sm mb-4">
             <div>
-              <span className="font-medium text-gray-700">Safe Votes:</span>
-              <span className="ml-2 text-green-600 font-semibold">
+              <span className="font-semibold text-gray-700">Safe Votes:</span>
+              <span className="ml-2 text-emerald-900 font-bold">
                 {consensusResult.safe_votes}/{consensusResult.total_models}
               </span>
             </div>
             <div>
-              <span className="font-medium text-gray-700">Harmful Votes:</span>
-              <span className="ml-2 text-red-600 font-semibold">
+              <span className="font-semibold text-gray-700">Harmful Votes:</span>
+              <span className="ml-2 text-red-900 font-bold">
                 {consensusResult.harmful_votes}/{consensusResult.total_models}
               </span>
             </div>
             <div>
-              <span className="font-medium text-gray-700">Threshold:</span>
-              <span className="ml-2">{consensusResult.threshold} models</span>
+              <span className="font-semibold text-gray-700">Threshold:</span>
+              <span className="ml-2 text-gray-900 font-bold">{consensusResult.threshold} models</span>
             </div>
             <div>
-              <span className="font-medium text-gray-700">Status:</span>
-              <span className={`ml-2 font-semibold ${
-                consensusResult.consensus_passed ? 'text-green-600' : 'text-red-600'
+              <span className="font-semibold text-gray-700">Status:</span>
+              <span className={`ml-2 font-bold ${
+                consensusResult.consensus_passed ? 'text-emerald-900' : 'text-red-900'
               }`}>
                 {consensusResult.consensus_passed ? 'PASSED' : 'FAILED'}
               </span>
             </div>
           </div>
           
-          {/* 개별 모델 응답 */}
+          {/* Individual model responses */}
           <div className="mt-4">
-            <h5 className="font-medium text-gray-900 mb-2">Individual Model Responses</h5>
+            <h5 className="font-semibold text-gray-900 mb-3">Individual Model Responses</h5>
             <div className="space-y-2">
               {Object.entries(consensusResult.model_responses).map(([provider, response]) => (
-                <div key={provider} className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-gray-700 capitalize">{provider}</span>
+                <div key={provider} className="flex items-center justify-between text-sm p-3 bg-white rounded-lg border border-blue-200 hover:border-blue-300 transition-colors duration-200">
+                  <span className="font-semibold text-gray-700 capitalize">{provider}</span>
                   <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-1 rounded-full text-xs ${
+                    <span className={`px-3 py-1 rounded-lg text-xs font-semibold shadow-sm ${
                       response.is_harmful 
-                        ? 'bg-red-100 text-red-800' 
-                        : 'bg-green-100 text-green-800'
+                        ? 'bg-red-100 text-red-800 border border-red-200' 
+                        : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                     }`}>
                       {response.is_harmful ? 'Harmful' : 'Safe'}
                     </span>
-                    <span className="text-gray-500">
+                    <span className="text-gray-500 text-xs font-medium">
                       {response.response_time.toFixed(2)}s
                     </span>
                   </div>
@@ -194,14 +195,20 @@ export default function ConsensusLoading({ currentStep, consensusResult, error }
         </div>
       )}
 
-      {/* 에러 표시 */}
+      {/* Error display */}
       {error && (
-        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <div className="flex items-center space-x-2">
-            <span className="text-red-500">❌</span>
-            <span className="font-medium text-red-800">Error</span>
+        <div className="mt-4 p-5 bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-300 rounded-xl shadow-sm">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-red-500 rounded-lg flex items-center justify-center">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <div className="font-bold text-red-900 mb-1">Error</div>
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
           </div>
-          <p className="text-sm text-red-700 mt-1">{error}</p>
         </div>
       )}
     </div>

@@ -1,0 +1,467 @@
+[
+  {
+    "test_number": 1,
+    "timestamp": "2025-10-09T21:56:09.493505",
+    "prompt": "Hello, how are you?",
+    "success": true,
+    "llm_response": "Hi — I’m just a virtual assistant, so I don’t have feelings, but I’m ready to help. What can I do for you today?",
+    "llm_time": 3.339386224746704,
+    "hash_value": "54edf4c4e5c003978ade26d181f43651f61b852e812f4928d04379d9000cad85",
+    "commit": {
+      "transaction_hash": "0xbf0001b89d300b79b2d60fd29540ff26ce6c5ed9ade8583794f7fdb2ab7b1890",
+      "block_number": 9378357,
+      "gas_used": 401417,
+      "gas_price_gwei": 1.0,
+      "gas_cost_eth": 0.000401417,
+      "timing": {
+        "tx_submission_time": 0.04473996162414551,
+        "tx_confirmation_time": 11.376667976379395,
+        "total_commit_time": 11.882673025131226
+      }
+    },
+    "cost_analysis": {
+      "eth_price_usd": 4355.54,
+      "l1_mainnet": {
+        "network": "ethereum_l1",
+        "gas_used": 401417,
+        "gas_price_gwei": 1.0,
+        "gas_price_eth": 1e-09,
+        "total_cost_eth": 0.00040141700000000005,
+        "total_cost_usd": 1.7483878001800002,
+        "eth_price_usd": 4355.54
+      },
+      "l2_networks": {
+        "arbitrum": {
+          "network": "arbitrum",
+          "estimated_cost_eth": 2.0070850000000005e-05,
+          "estimated_cost_usd": 0.08741939000900001,
+          "cost_reduction_percent": 95.0,
+          "savings_vs_l1_eth": 0.00038134615000000007,
+          "savings_vs_l1_usd": 1.6609684101710003
+        },
+        "optimism": {
+          "network": "optimism",
+          "estimated_cost_eth": 2.4085020000000002e-05,
+          "estimated_cost_usd": 0.10490326801080001,
+          "cost_reduction_percent": 94.0,
+          "savings_vs_l1_eth": 0.00037733198000000005,
+          "savings_vs_l1_usd": 1.6434845321692002
+        },
+        "base": {
+          "network": "base",
+          "estimated_cost_eth": 2.0070850000000005e-05,
+          "estimated_cost_usd": 0.08741939000900001,
+          "cost_reduction_percent": 95.0,
+          "savings_vs_l1_eth": 0.00038134615000000007,
+          "savings_vs_l1_usd": 1.6609684101710003
+        },
+        "polygon": {
+          "network": "polygon",
+          "estimated_cost_eth": 4.014170000000001e-06,
+          "estimated_cost_usd": 0.017483878001800002,
+          "cost_reduction_percent": 99.0,
+          "savings_vs_l1_eth": 0.00039740283000000003,
+          "savings_vs_l1_usd": 1.7309039221782
+        },
+        "zksync": {
+          "network": "zksync",
+          "estimated_cost_eth": 1.2042510000000001e-05,
+          "estimated_cost_usd": 0.052451634005400004,
+          "cost_reduction_percent": 97.0,
+          "savings_vs_l1_eth": 0.00038937449000000005,
+          "savings_vs_l1_usd": 1.6959361661746002
+        }
+      },
+      "cheapest_l2": {
+        "network": "polygon",
+        "estimated_cost_eth": 4.014170000000001e-06,
+        "estimated_cost_usd": 0.017483878001800002,
+        "cost_reduction_percent": 99.0,
+        "savings_vs_l1_eth": 0.00039740283000000003,
+        "savings_vs_l1_usd": 1.7309039221782
+      }
+    },
+    "verification": {
+      "exists": true,
+      "is_success": true,
+      "timing": {
+        "api_call_time_tx": 0.22028589248657227,
+        "api_call_time_receipt": 0.3080899715423584,
+        "hash_verification_time": 9.894371032714844e-05,
+        "total_verification_time": 0.5299239158630371
+      }
+    }
+  },
+  {
+    "test_number": 2,
+    "timestamp": "2025-10-09T21:56:31.375942",
+    "prompt": "What is 2+2?",
+    "success": true,
+    "llm_response": "2 + 2 = 4.",
+    "llm_time": 3.860713005065918,
+    "hash_value": "4201993bd7c8aa9ab8ba4870b9e860ae7c6238a19c35ba47d165e79a44ab31ff",
+    "commit": {
+      "transaction_hash": "0x85ed99ab50fb515565c65197e17973f31c4d010ab15164cc12042004552c8bd6",
+      "block_number": 9378358,
+      "gas_used": 309880,
+      "gas_price_gwei": 1.0,
+      "gas_cost_eth": 0.00030988,
+      "timing": {
+        "tx_submission_time": 0.04477810859680176,
+        "tx_confirmation_time": 1.0430409908294678,
+        "total_commit_time": 1.427746057510376
+      }
+    },
+    "cost_analysis": {
+      "eth_price_usd": 4356.84,
+      "l1_mainnet": {
+        "network": "ethereum_l1",
+        "gas_used": 309880,
+        "gas_price_gwei": 1.0,
+        "gas_price_eth": 1e-09,
+        "total_cost_eth": 0.00030988,
+        "total_cost_usd": 1.3500975792,
+        "eth_price_usd": 4356.84
+      },
+      "l2_networks": {
+        "arbitrum": {
+          "network": "arbitrum",
+          "estimated_cost_eth": 1.5494e-05,
+          "estimated_cost_usd": 0.06750487896,
+          "cost_reduction_percent": 95.0,
+          "savings_vs_l1_eth": 0.000294386,
+          "savings_vs_l1_usd": 1.2825927002400002
+        },
+        "optimism": {
+          "network": "optimism",
+          "estimated_cost_eth": 1.85928e-05,
+          "estimated_cost_usd": 0.081005854752,
+          "cost_reduction_percent": 94.0,
+          "savings_vs_l1_eth": 0.0002912872,
+          "savings_vs_l1_usd": 1.269091724448
+        },
+        "base": {
+          "network": "base",
+          "estimated_cost_eth": 1.5494e-05,
+          "estimated_cost_usd": 0.06750487896,
+          "cost_reduction_percent": 95.0,
+          "savings_vs_l1_eth": 0.000294386,
+          "savings_vs_l1_usd": 1.2825927002400002
+        },
+        "polygon": {
+          "network": "polygon",
+          "estimated_cost_eth": 3.0988000000000003e-06,
+          "estimated_cost_usd": 0.013500975792,
+          "cost_reduction_percent": 99.0,
+          "savings_vs_l1_eth": 0.0003067812,
+          "savings_vs_l1_usd": 1.3365966034080001
+        },
+        "zksync": {
+          "network": "zksync",
+          "estimated_cost_eth": 9.2964e-06,
+          "estimated_cost_usd": 0.040502927376,
+          "cost_reduction_percent": 97.0,
+          "savings_vs_l1_eth": 0.00030058360000000003,
+          "savings_vs_l1_usd": 1.309594651824
+        }
+      },
+      "cheapest_l2": {
+        "network": "polygon",
+        "estimated_cost_eth": 3.0988000000000003e-06,
+        "estimated_cost_usd": 0.013500975792,
+        "cost_reduction_percent": 99.0,
+        "savings_vs_l1_eth": 0.0003067812,
+        "savings_vs_l1_usd": 1.3365966034080001
+      }
+    },
+    "verification": {
+      "exists": true,
+      "is_success": true,
+      "timing": {
+        "api_call_time_tx": 0.22618770599365234,
+        "api_call_time_receipt": 0.14854097366333008,
+        "hash_verification_time": 9.393692016601562e-05,
+        "total_verification_time": 0.3760397434234619
+      }
+    }
+  },
+  {
+    "test_number": 3,
+    "timestamp": "2025-10-09T21:56:43.209683",
+    "prompt": "Tell me a short joke.",
+    "success": true,
+    "llm_response": "Why did the scarecrow win an award? Because he was outstanding in his field.",
+    "llm_time": 4.1894800662994385,
+    "hash_value": "cad1d4c041a39711d5c0ce9cd20c35de79d3d4dc1b29ebe21ffa5b8f4e3b2dc2",
+    "commit": {
+      "transaction_hash": "0xb3b3378cd3a0ac87f042cc6d46518858193c5840d78b931bb0cbade342ca11fc",
+      "block_number": 9378360,
+      "gas_used": 378279,
+      "gas_price_gwei": 1.0,
+      "gas_cost_eth": 0.000378279,
+      "timing": {
+        "tx_submission_time": 0.049033164978027344,
+        "tx_confirmation_time": 12.658710956573486,
+        "total_commit_time": 12.986531019210815
+      }
+    },
+    "cost_analysis": {
+      "eth_price_usd": 4356.84,
+      "l1_mainnet": {
+        "network": "ethereum_l1",
+        "gas_used": 378279,
+        "gas_price_gwei": 1.0,
+        "gas_price_eth": 1e-09,
+        "total_cost_eth": 0.00037827900000000003,
+        "total_cost_usd": 1.64810107836,
+        "eth_price_usd": 4356.84
+      },
+      "l2_networks": {
+        "arbitrum": {
+          "network": "arbitrum",
+          "estimated_cost_eth": 1.8913950000000002e-05,
+          "estimated_cost_usd": 0.08240505391800002,
+          "cost_reduction_percent": 95.0,
+          "savings_vs_l1_eth": 0.00035936505,
+          "savings_vs_l1_usd": 1.565696024442
+        },
+        "optimism": {
+          "network": "optimism",
+          "estimated_cost_eth": 2.2696740000000002e-05,
+          "estimated_cost_usd": 0.0988860647016,
+          "cost_reduction_percent": 94.0,
+          "savings_vs_l1_eth": 0.00035558226,
+          "savings_vs_l1_usd": 1.5492150136584
+        },
+        "base": {
+          "network": "base",
+          "estimated_cost_eth": 1.8913950000000002e-05,
+          "estimated_cost_usd": 0.08240505391800002,
+          "cost_reduction_percent": 95.0,
+          "savings_vs_l1_eth": 0.00035936505,
+          "savings_vs_l1_usd": 1.565696024442
+        },
+        "polygon": {
+          "network": "polygon",
+          "estimated_cost_eth": 3.78279e-06,
+          "estimated_cost_usd": 0.0164810107836,
+          "cost_reduction_percent": 99.0,
+          "savings_vs_l1_eth": 0.00037449621,
+          "savings_vs_l1_usd": 1.6316200675764
+        },
+        "zksync": {
+          "network": "zksync",
+          "estimated_cost_eth": 1.1348370000000001e-05,
+          "estimated_cost_usd": 0.0494430323508,
+          "cost_reduction_percent": 97.0,
+          "savings_vs_l1_eth": 0.00036693063000000004,
+          "savings_vs_l1_usd": 1.5986580460092001
+        }
+      },
+      "cheapest_l2": {
+        "network": "polygon",
+        "estimated_cost_eth": 3.78279e-06,
+        "estimated_cost_usd": 0.0164810107836,
+        "cost_reduction_percent": 99.0,
+        "savings_vs_l1_eth": 0.00037449621,
+        "savings_vs_l1_usd": 1.6316200675764
+      }
+    },
+    "verification": {
+      "exists": true,
+      "is_success": true,
+      "timing": {
+        "api_call_time_tx": 0.15655088424682617,
+        "api_call_time_receipt": 0.1325368881225586,
+        "hash_verification_time": 0.00016999244689941406,
+        "total_verification_time": 0.2912869453430176
+      }
+    }
+  },
+  {
+    "test_number": 4,
+    "timestamp": "2025-10-09T21:57:06.837837",
+    "prompt": "What color is the sky?",
+    "success": true,
+    "llm_response": "**Answering about sky color**\n\nThe user wants to know about the color of the sky, which is typically blue due to Rayleigh scattering. I could explain that the sky can appear in various colors like red, orange, or pink during sunrise and sunset, gray when overcast, and black at night. The color depends on factors like time of day and pollutants, with shorter wavelengths being scattered more than longer ones. I’ll give a brief yet informative response without too much detail.**Explaining sky color**\n\nThe user asked about the color of the sky, which is typically blue due to Rayleigh scattering. It can change at sunrise or sunset to red, orange, or pink, and it appears gray when overcast and black at night. I should note that these colors can vary based on time of day, atmospheric conditions, and viewing angles. I might mention that shorter wavelengths (like blue light) scatter more than longer ones and add that clouds scatter all wavelengths equally, making an overcast sky appear gray.",
+    "llm_time": 8.251943111419678,
+    "hash_value": "c6073f92d13409798ad61e399e6b548c4cb671c4cffb322445538eae8b23d6ba",
+    "commit": {
+      "transaction_hash": "0x1d07f28d55cf601e0b797426c84271d8d7658ce66b73fafeaf47c5f969bf619f",
+      "block_number": 9378362,
+      "gas_used": 1046092,
+      "gas_price_gwei": 1.0,
+      "gas_cost_eth": 0.001046092,
+      "timing": {
+        "tx_submission_time": 0.04488086700439453,
+        "tx_confirmation_time": 9.053483963012695,
+        "total_commit_time": 9.351304054260254
+      }
+    },
+    "cost_analysis": {
+      "eth_price_usd": 4356.84,
+      "l1_mainnet": {
+        "network": "ethereum_l1",
+        "gas_used": 1046092,
+        "gas_price_gwei": 1.0,
+        "gas_price_eth": 1e-09,
+        "total_cost_eth": 0.001046092,
+        "total_cost_usd": 4.55765546928,
+        "eth_price_usd": 4356.84
+      },
+      "l2_networks": {
+        "arbitrum": {
+          "network": "arbitrum",
+          "estimated_cost_eth": 5.23046e-05,
+          "estimated_cost_usd": 0.22788277346400002,
+          "cost_reduction_percent": 95.0,
+          "savings_vs_l1_eth": 0.0009937874,
+          "savings_vs_l1_usd": 4.3297726958160005
+        },
+        "optimism": {
+          "network": "optimism",
+          "estimated_cost_eth": 6.276552e-05,
+          "estimated_cost_usd": 0.2734593281568,
+          "cost_reduction_percent": 94.0,
+          "savings_vs_l1_eth": 0.00098332648,
+          "savings_vs_l1_usd": 4.2841961411232
+        },
+        "base": {
+          "network": "base",
+          "estimated_cost_eth": 5.23046e-05,
+          "estimated_cost_usd": 0.22788277346400002,
+          "cost_reduction_percent": 95.0,
+          "savings_vs_l1_eth": 0.0009937874,
+          "savings_vs_l1_usd": 4.3297726958160005
+        },
+        "polygon": {
+          "network": "polygon",
+          "estimated_cost_eth": 1.046092e-05,
+          "estimated_cost_usd": 0.0455765546928,
+          "cost_reduction_percent": 99.0,
+          "savings_vs_l1_eth": 0.00103563108,
+          "savings_vs_l1_usd": 4.5120789145872005
+        },
+        "zksync": {
+          "network": "zksync",
+          "estimated_cost_eth": 3.138276e-05,
+          "estimated_cost_usd": 0.1367296640784,
+          "cost_reduction_percent": 97.0,
+          "savings_vs_l1_eth": 0.00101470924,
+          "savings_vs_l1_usd": 4.4209258052016
+        }
+      },
+      "cheapest_l2": {
+        "network": "polygon",
+        "estimated_cost_eth": 1.046092e-05,
+        "estimated_cost_usd": 0.0455765546928,
+        "cost_reduction_percent": 99.0,
+        "savings_vs_l1_eth": 0.00103563108,
+        "savings_vs_l1_usd": 4.5120789145872005
+      }
+    },
+    "verification": {
+      "exists": true,
+      "is_success": true,
+      "timing": {
+        "api_call_time_tx": 0.16948986053466797,
+        "api_call_time_receipt": 0.15022897720336914,
+        "hash_verification_time": 0.00010704994201660156,
+        "total_verification_time": 0.3207879066467285
+      }
+    }
+  },
+  {
+    "test_number": 5,
+    "timestamp": "2025-10-09T21:57:30.872552",
+    "prompt": "Count from 1 to 3.",
+    "success": true,
+    "llm_response": "1\n2\n3",
+    "llm_time": 3.958726167678833,
+    "hash_value": "0863a31edf688c7b325f5aa4e22fabc9d701f4b22947620d5cadd3c99025abe9",
+    "commit": {
+      "transaction_hash": "0xa9da64f87c0776fb1ddcf18a9a63020e53e9dba1648dc83ce4b69ad7afee5e34",
+      "block_number": 9378364,
+      "gas_used": 309892,
+      "gas_price_gwei": 1.0,
+      "gas_cost_eth": 0.000309892,
+      "timing": {
+        "tx_submission_time": 0.0901949405670166,
+        "tx_confirmation_time": 14.0192129611969,
+        "total_commit_time": 14.430718898773193
+      }
+    },
+    "cost_analysis": {
+      "eth_price_usd": 4357.36,
+      "l1_mainnet": {
+        "network": "ethereum_l1",
+        "gas_used": 309892,
+        "gas_price_gwei": 1.0,
+        "gas_price_eth": 1e-09,
+        "total_cost_eth": 0.00030989200000000003,
+        "total_cost_usd": 1.35031100512,
+        "eth_price_usd": 4357.36
+      },
+      "l2_networks": {
+        "arbitrum": {
+          "network": "arbitrum",
+          "estimated_cost_eth": 1.5494600000000002e-05,
+          "estimated_cost_usd": 0.067515550256,
+          "cost_reduction_percent": 95.0,
+          "savings_vs_l1_eth": 0.00029439740000000004,
+          "savings_vs_l1_usd": 1.282795454864
+        },
+        "optimism": {
+          "network": "optimism",
+          "estimated_cost_eth": 1.8593520000000002e-05,
+          "estimated_cost_usd": 0.0810186603072,
+          "cost_reduction_percent": 94.0,
+          "savings_vs_l1_eth": 0.00029129848000000004,
+          "savings_vs_l1_usd": 1.2692923448128
+        },
+        "base": {
+          "network": "base",
+          "estimated_cost_eth": 1.5494600000000002e-05,
+          "estimated_cost_usd": 0.067515550256,
+          "cost_reduction_percent": 95.0,
+          "savings_vs_l1_eth": 0.00029439740000000004,
+          "savings_vs_l1_usd": 1.282795454864
+        },
+        "polygon": {
+          "network": "polygon",
+          "estimated_cost_eth": 3.0989200000000002e-06,
+          "estimated_cost_usd": 0.013503110051200001,
+          "cost_reduction_percent": 99.0,
+          "savings_vs_l1_eth": 0.00030679308000000003,
+          "savings_vs_l1_usd": 1.3368078950688
+        },
+        "zksync": {
+          "network": "zksync",
+          "estimated_cost_eth": 9.296760000000001e-06,
+          "estimated_cost_usd": 0.0405093301536,
+          "cost_reduction_percent": 97.0,
+          "savings_vs_l1_eth": 0.00030059524000000003,
+          "savings_vs_l1_usd": 1.3098016749664
+        }
+      },
+      "cheapest_l2": {
+        "network": "polygon",
+        "estimated_cost_eth": 3.0989200000000002e-06,
+        "estimated_cost_usd": 0.013503110051200001,
+        "cost_reduction_percent": 99.0,
+        "savings_vs_l1_eth": 0.00030679308000000003,
+        "savings_vs_l1_usd": 1.3368078950688
+      }
+    },
+    "verification": {
+      "exists": true,
+      "is_success": true,
+      "timing": {
+        "api_call_time_tx": 1.144813060760498,
+        "api_call_time_receipt": 0.25452399253845215,
+        "hash_verification_time": 0.00023603439331054688,
+        "total_verification_time": 1.4024150371551514
+      }
+    }
+  }
+]

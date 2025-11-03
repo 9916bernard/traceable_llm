@@ -32,14 +32,14 @@ def generate_with_verification():
         consensus_service = ConsensusService()
         consensus_result = consensus_service.run_consensus_validation(prompt)
         
-        # Consensus 검증 실패 시 에러 반환
+        # Consensus 검증 실패 시 결과만 반환 (에러가 아닌 정상 응답)
         if not consensus_result['consensus_passed']:
             return jsonify({
-                'success': False,
-                'error': 'Consensus validation failed',
+                'success': True,
+                'consensus_only': True,
                 'consensus_result': consensus_result,
                 'message': consensus_result['consensus_message']
-            }), 400
+            }), 200
         
         # 2. LLM 서비스 호출
         llm_service = LLMService()
@@ -111,7 +111,8 @@ def get_available_models():
         'grok': ['llama-3.3-70b-instruct:free'],
         'claude': ['claude-3.7-sonnet'],
         'gemini': ['gemini-2.5-flash-lite'],
-        'deepseek': ['deepseek-chat-v3.1:free']
+        'deepseek': ['deepseek-chat'],
+        'llama': ['llama-3.1-8b-instruct']
     }
     
     return jsonify(models), 200

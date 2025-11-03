@@ -21,7 +21,7 @@ export default function VerificationChecker() {
     reset,
   } = useForm<FormData>();
 
-  // 검증 뮤테이션
+  // Verification mutation
   const verifyMutation = useMutation(verificationApi.verify, {
     onMutate: () => {
       setIsVerifying(true);
@@ -64,7 +64,7 @@ export default function VerificationChecker() {
 
   return (
     <div className="space-y-6">
-      {/* 검증 폼 */}
+      {/* Verification form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
           <label className="label">Transaction Hash to Verify</label>
@@ -78,7 +78,7 @@ export default function VerificationChecker() {
             placeholder="Enter a Sepolia transaction hash to verify..."
           />
           {errors.hash_value && (
-            <p className="mt-1 text-sm text-error-600">{errors.hash_value.message}</p>
+            <p className="mt-1 text-sm text-red-600">{errors.hash_value.message}</p>
           )}
         </div>
 
@@ -108,103 +108,184 @@ export default function VerificationChecker() {
         </div>
       </form>
 
-      {/* 검증 결과 */}
+      {/* Verification results */}
       {result && (
-        <div className="space-y-4 fade-in">
-          <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Verification Result</h3>
+        <div className="space-y-6 fade-in">
+          <div className="border-t border-slate-200 pt-6">
+            <h3 className="text-lg font-semibold text-slate-900 mb-6">Verification Result</h3>
             
-            {/* 검증 상태 */}
-            <div className="mb-6">
-              <div className="flex items-center space-x-4">
-                <div className={`px-4 py-2 rounded-lg ${
+            {/* Overall status card */}
+            <div className={`card mb-8 ${
+              result.verified 
+                ? 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-300 shadow-lg' 
+                : 'bg-gradient-to-br from-red-50 to-red-100 border-red-300 shadow-lg'
+            }`}>
+              <div className="flex items-center space-x-5">
+                <div className={`flex-shrink-0 w-20 h-20 rounded-xl flex items-center justify-center shadow-lg ${
                   result.verified 
-                    ? 'bg-success-100 text-success-800 border border-success-200' 
-                    : 'bg-error-100 text-error-800 border border-error-200'
+                    ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white' 
+                    : 'bg-gradient-to-br from-red-500 to-red-600 text-white'
                 }`}>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-lg">
-                      {result.verified ? '✅' : '❌'}
-                    </span>
-                    <span className="font-semibold">
+                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {result.verified ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                    )}
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <div className={`text-2xl font-bold mb-2 ${
+                    result.verified ? 'text-emerald-900' : 'text-red-900'
+                  }`}>
                       {result.verified ? 'Verification Success' : 'Verification Failed'}
-                    </span>
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {result.message}
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Three separate verification cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               
-              <div className="mt-4">
-                <p className="text-sm text-gray-700">{result.message}</p>
+              {/* Card 1: Hash Existence Check */}
+              <div className="card bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 hover-lift">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <h4 className="font-bold text-gray-900">Hash Existence</h4>
+                </div>
+                <div className="space-y-3">
+                  <div className={`inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-semibold shadow-sm ${
+                    result.verified 
+                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' 
+                      : 'bg-red-100 text-red-800 border border-red-300'
+                  }`}>
+                    {result.verified ? 'Found on Blockchain' : 'Not Found'}
+                  </div>
+                  <p className="text-xs text-gray-600 leading-relaxed">
+                    {result.verified 
+                      ? 'The transaction hash exists on the blockchain and has been confirmed.'
+                      : 'The provided hash was not found on the blockchain network.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 2: Re-calculate Verification */}
+              <div className="card bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 hover-lift">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <h4 className="font-bold text-gray-900">Re-calculate Check</h4>
+                </div>
+                <div className="space-y-3">
+                  <div className={`inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-semibold shadow-sm ${
+                    result.verified 
+                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' 
+                      : 'bg-gray-200 text-gray-700 border border-gray-300'
+                  }`}>
+                    {result.verified ? 'Match' : 'N/A'}
+                  </div>
+                  <p className="text-xs text-gray-600 leading-relaxed">
+                    {result.verified 
+                      ? 'Hash recalculation from blockchain data matches the original.'
+                      : 'Cannot recalculate as hash was not found.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 3: Origin Verification */}
+              <div className="card bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 hover-lift">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                  </div>
+                  <h4 className="font-bold text-gray-900">Origin Check</h4>
+                </div>
+                <div className="space-y-3">
+                  {result.origin_verification ? (
+                    <>
+                      <div className={`inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-semibold shadow-sm ${
+                        result.origin_verification.origin_verified 
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' 
+                          : 'bg-amber-100 text-amber-800 border border-amber-300'
+                      }`}>
+                        {result.origin_verification.origin_verified ? 'Our Website' : 'External Source'}
+                      </div>
+                      <p className="text-xs text-gray-600 leading-relaxed">
+                        {result.origin_verification.origin_verified 
+                          ? 'Transaction originated from our official address.'
+                          : 'Transaction came from a different address.'}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-semibold bg-gray-200 text-gray-700 border border-gray-300 shadow-sm">
+                        N/A
+                      </div>
+                      <p className="text-xs text-gray-600 leading-relaxed">
+                        Origin information not available.
+                      </p>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* 출처 검증 정보 */}
+            {/* Detailed origin verification information */}
             {result.origin_verification && (
-              <div className="mb-6">
-                <h4 className="font-medium text-gray-900 mb-3">Origin Verification</h4>
-                <div className={`px-4 py-3 rounded-lg border ${
-                  result.origin_verification.origin_verified
-                    ? 'bg-green-50 border-green-200'
-                    : 'bg-red-50 border-red-200'
-                }`}>
-                  <div className="flex items-center space-x-2 mb-3">
-                    <span className="text-lg">
-                      {result.origin_verification.origin_verified ? '🏠' : '⚠️'}
-                    </span>
-                    <span className={`font-semibold ${
-                      result.origin_verification.origin_verified ? 'text-green-800' : 'text-red-800'
-                    }`}>
-                      {result.origin_verification.origin_verified 
-                        ? 'Our Website Origin' 
-                        : 'Different Origin'
-                      }
-                    </span>
+              <div className="card bg-slate-50 mb-6">
+                <h4 className="font-semibold text-slate-900 mb-4">Origin Verification Details</h4>
+                <div className="space-y-3">
+                  <div>
+                    <div className="text-xs font-medium text-slate-600 mb-1">Transaction From Address</div>
+                    <div className="font-mono text-sm text-slate-900 bg-white px-3 py-2 rounded border border-slate-200">
+                      {result.origin_verification.from_address}
+                    </div>
                   </div>
-                  
-                  {/* 주소 비교 정보 */}
-                  <div className="p-3 bg-white rounded border text-xs">
-                    <div className="space-y-1">
                       <div>
-                        <span className="font-medium text-gray-600">Etherscan From Address:</span>
-                        <span className="ml-2 font-mono text-gray-800">
-                          {result.origin_verification.from_address}
-                        </span>
+                    <div className="text-xs font-medium text-slate-600 mb-1">Our Official Address</div>
+                    <div className="font-mono text-sm text-slate-900 bg-white px-3 py-2 rounded border border-slate-200">
+                      {result.origin_verification.our_official_address}
+                    </div>
                       </div>
                       <div>
-                        <span className="font-medium text-gray-600">Our Official Address:</span>
-                        <span className="ml-2 font-mono text-gray-800">
-                          {result.origin_verification.our_official_address}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="font-medium text-gray-600">Address Match:</span>
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                    <div className="text-xs font-medium text-slate-600 mb-1">Match Status</div>
+                    <div className={`inline-flex items-center px-3 py-1.5 rounded font-medium text-sm ${
                           result.origin_verification.origin_verified
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
+                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                        : 'bg-amber-100 text-amber-800 border border-amber-200'
                         }`}>
-                          {result.origin_verification.origin_verified ? 'Match' : 'Mismatch'}
-                        </span>
-                      </div>
+                      {result.origin_verification.origin_verified ? 'Addresses Match' : 'Addresses Do Not Match'}
                     </div>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* 트랜잭션 정보 */}
-            <div className="space-y-4">
-              <h4 className="font-medium text-gray-900">Transaction Information</h4>
+            {/* Transaction information */}
+            <div className="card">
+              <h4 className="font-semibold text-slate-900 mb-4">Transaction Information</h4>
               
-              {/* 트랜잭션 해시 */}
-              <div>
+              {/* Transaction hash */}
+              <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="label mb-0">Transaction Hash</label>
+                  <label className="text-sm font-medium text-slate-700">Transaction Hash</label>
                   <button
                     onClick={handleCopyHash}
                     className="btn-outline text-xs"
                   >
-                    복사
+                    Copy
                   </button>
                 </div>
                 <div className="hash-display">
@@ -212,63 +293,158 @@ export default function VerificationChecker() {
                 </div>
               </div>
 
-              {/* 블록체인 검증 상세 정보 */}
-              {result.blockchain_info && (
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <h5 className="font-medium text-gray-900 mb-2">Blockchain Verification Details</h5>
-                  <div className="space-y-2 text-sm">
+              {/* Input Data (Transaction Details) */}
+              {result.input_data && (
+                <div className="mb-6 p-5 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+                  <h5 className="font-bold text-gray-900 mb-4 flex items-center space-x-2">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>Transaction Data</span>
+                  </h5>
+                  <div className="space-y-4">
+                    {/* Model Info */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-xs font-semibold text-gray-600 mb-1">LLM Provider</div>
+                        <div className="text-sm font-medium text-gray-900 bg-white px-3 py-2 rounded-lg border border-blue-100">
+                          {result.input_data.llm_provider}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs font-semibold text-gray-600 mb-1">Model Name</div>
+                        <div className="text-sm font-medium text-gray-900 bg-white px-3 py-2 rounded-lg border border-blue-100">
+                          {result.input_data.model_name}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Timestamp */}
+                    {result.input_data.timestamp && (
+                      <div>
+                        <div className="text-xs font-semibold text-gray-600 mb-1">Timestamp</div>
+                        <div className="text-sm font-mono text-gray-900 bg-white px-3 py-2 rounded-lg border border-blue-100">
+                          {result.input_data.timestamp}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Consensus Votes */}
+                    {result.input_data.consensus_votes && (
+                      <div>
+                        <div className="text-xs font-semibold text-gray-600 mb-1">Consensus Votes</div>
+                        <div className="text-sm font-medium text-gray-900 bg-white px-3 py-2 rounded-lg border border-blue-100">
+                          {result.input_data.consensus_votes}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Prompt */}
                     <div>
-                      <span className="font-medium text-gray-700">Status:</span>
-                      <span className={`ml-2 badge ${
-                        result.blockchain_info.status === 'success' ? 'badge-success' : 'badge-error'
+                      <div className="text-xs font-semibold text-gray-600 mb-1">Prompt</div>
+                      <div className="text-sm text-gray-900 bg-white px-4 py-3 rounded-lg border border-blue-100 max-h-32 overflow-y-auto custom-scrollbar">
+                        {result.input_data.prompt}
+                      </div>
+                    </div>
+
+                    {/* Response */}
+                    <div>
+                      <div className="text-xs font-semibold text-gray-600 mb-1">Response</div>
+                      <div className="text-sm text-gray-900 bg-white px-4 py-3 rounded-lg border border-blue-100 max-h-40 overflow-y-auto custom-scrollbar">
+                        {result.input_data.response}
+                      </div>
+                    </div>
+
+                    {/* Hash */}
+                    <div>
+                      <div className="text-xs font-semibold text-gray-600 mb-1">Hash</div>
+                      <div className="text-xs font-mono text-gray-700 bg-white px-3 py-2 rounded-lg border border-blue-100 break-all">
+                        {result.input_data.hash}
+                      </div>
+                    </div>
+
+                    {/* Parameters */}
+                    {result.input_data.parameters && (
+                      <div>
+                        <div className="text-xs font-semibold text-gray-600 mb-1">Parameters</div>
+                        <div className="text-xs font-mono text-gray-700 bg-white px-3 py-2 rounded-lg border border-blue-100">
+                          {result.input_data.parameters}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Blockchain verification details */}
+              {result.blockchain_info && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-xs font-medium text-slate-600 mb-1">Status</div>
+                      <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                        result.blockchain_info.status === 'success' 
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' 
+                          : 'bg-red-100 text-red-800 border border-red-200'
                       }`}>
                         {result.blockchain_info.status}
                       </span>
                     </div>
                     {result.blockchain_info.block_number && (
                       <div>
-                        <span className="font-medium text-gray-700">Block Number:</span>
-                        <span className="ml-2">{result.blockchain_info.block_number}</span>
+                        <div className="text-xs font-medium text-slate-600 mb-1">Block Number</div>
+                        <div className="text-sm text-slate-900">{result.blockchain_info.block_number}</div>
                       </div>
                     )}
+                  </div>
+                  
                     {result.blockchain_info.gas_used && (
                       <div>
-                        <span className="font-medium text-gray-700">Gas Used:</span>
-                        <span className="ml-2">{result.blockchain_info.gas_used.toLocaleString()}</span>
+                      <div className="text-xs font-medium text-slate-600 mb-1">Gas Used</div>
+                      <div className="text-sm text-slate-900">{result.blockchain_info.gas_used.toLocaleString()}</div>
                       </div>
                     )}
+                  
                     {result.blockchain_info.from_address && (
                       <div>
-                        <span className="font-medium text-gray-700">From:</span>
-                        <span className="ml-2 font-mono">{result.blockchain_info.from_address}</span>
+                      <div className="text-xs font-medium text-slate-600 mb-1">From Address</div>
+                      <div className="font-mono text-sm text-slate-900 bg-slate-50 px-3 py-2 rounded">
+                        {result.blockchain_info.from_address}
+                      </div>
                       </div>
                     )}
+                  
                     {result.blockchain_info.to_address && (
                       <div>
-                        <span className="font-medium text-gray-700">To:</span>
-                        <span className="ml-2 font-mono">{result.blockchain_info.to_address}</span>
+                      <div className="text-xs font-medium text-slate-600 mb-1">To Address</div>
+                      <div className="font-mono text-sm text-slate-900 bg-slate-50 px-3 py-2 rounded">
+                        {result.blockchain_info.to_address}
+                      </div>
                       </div>
                     )}
+                  
                     {result.blockchain_info.etherscan_url && (
                       <div>
-                        <span className="font-medium text-gray-700">Etherscan:</span>
                         <a
                           href={result.blockchain_info.etherscan_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="ml-2 text-primary-600 hover:text-primary-800"
+                        className="inline-flex items-center text-sm font-medium text-slate-900 hover:text-slate-700 underline"
                         >
-                          View Transaction →
+                        View on Etherscan
+                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
                         </a>
                       </div>
                     )}
+                  
                     {result.blockchain_info.error_message && (
-                      <div>
-                        <span className="font-medium text-gray-700">Error Message:</span>
-                        <span className="ml-2 text-error-600">{result.blockchain_info.error_message}</span>
+                    <div className="p-3 bg-slate-100 rounded border border-slate-300">
+                      <div className="text-xs font-medium text-slate-700 mb-1">Error Message</div>
+                      <div className="text-sm text-slate-900">{result.blockchain_info.error_message}</div>
                       </div>
                     )}
-                  </div>
                 </div>
               )}
             </div>

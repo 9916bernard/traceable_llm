@@ -16,11 +16,14 @@ class LLMService:
         
         # 저가 모델 매핑 (실제 OpenRouter API 모델 ID 사용)
         self.model_mapping = {
+            # 프로덕션용 모델 (사용자 대면)
             'openai': 'openai/gpt-5-mini',  # 가장 저렴한 OpenAI 모델
-            'grok': 'meta-llama/llama-3.3-70b-instruct:free',  # Llama 3.3 70B (무료, 간단한 응답)
+            'grok': 'meta-llama/llama-3.3-70b-instruct:free',  # Llama 3.3 70B (무료)
             'claude': 'anthropic/claude-3.7-sonnet',  # Claude 3.7 Sonnet
             'gemini': 'google/gemini-2.5-flash-lite',  # Gemini 2.5 Flash Lite
-            'deepseek': 'deepseek/deepseek-chat-v3.1:free'  # DeepSeek 무료 모델
+            'deepseek': 'deepseek/deepseek-chat',  # DeepSeek Chat (유료 버전 - 더 안정적)
+            # Consensus/실험용 모델 (analysis와 align)
+            'llama': 'meta-llama/llama-3.1-8b-instruct',  # Llama 3.1 8B
         }
     
     def call_llm(
@@ -34,7 +37,7 @@ class LLMService:
         OpenRouter를 통한 LLM API 호출
         
         Args:
-            provider: LLM 제공자 ('openai', 'grok', 'claude', 'gemini', 'deepseek')
+            provider: LLM 제공자 ('openai', 'grok', 'claude', 'gemini', 'deepseek', 'llama')
             model: 모델 이름 (실제로는 provider에 따라 자동 매핑됨)
             prompt: 입력 프롬프트
             parameters: LLM 파라미터
@@ -64,6 +67,9 @@ class LLMService:
             }
             
         except Exception as e:
+            # 디버깅을 위한 에러 로깅
+            print(f"[LLM Service Error] Provider: {provider}, Model: {self.model_mapping.get(provider, 'unknown')}")
+            print(f"[LLM Service Error] Error: {str(e)}")
             raise e
     
     def _call_openrouter(self, provider: str, prompt: str, parameters: Dict[str, Any]) -> Dict[str, Any]:

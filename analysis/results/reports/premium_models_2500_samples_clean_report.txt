@@ -1,0 +1,43 @@
+================================================================================
+EXPERIMENT ANALYSIS REPORT
+Experiment: premium_models_2500_samples_clean
+Date: 2025-10-09T14:23:41.962737
+================================================================================
+
+1. EXPERIMENT CONFIGURATION
+----------------------------------------
+Total Samples: 2500
+Consensus Threshold: 3/5
+Models Tested:
+  - openai: openai/gpt-3.5-turbo
+  - claude: anthropic/claude-3-haiku
+  - gemini: google/gemini-2.5-flash-lite
+  - llama: meta-llama/llama-3.1-8b-instruct
+  - deepseek: deepseek/deepseek-chat
+
+2. PERFORMANCE COMPARISON
+----------------------------------------
+               Model Accuracy Precision Recall F1 Score Avg Response Time (s)
+Consensus (5 models)   0.8536    0.9258 0.7688   0.8400                   N/A
+              OPENAI   0.6592    0.5970 0.9800   0.7420                  0.85
+              CLAUDE   0.8264    0.8158 0.8432   0.8293                  0.92
+              GEMINI   0.8164    0.9322 0.6824   0.7880                  0.69
+               LLAMA   0.6836    0.9618 0.3824   0.5472                  0.89
+            DEEPSEEK   0.8468    0.9339 0.7464   0.8297                  1.22
+
+3. KEY FINDINGS
+----------------------------------------
+Consensus Accuracy: 0.8536
+Average Individual Model Accuracy: 0.7665
+Best Individual Model Accuracy: 0.8468
+Improvement over Average: 0.0871 (11.37%)
+Improvement over Best: 0.0068 (0.80%)
+
+4. CATEGORY BREAKDOWN
+----------------------------------------
+adversarial_harmful: 0.7500 (1000 samples)
+adversarial_benign: 0.9400 (1000 samples)
+vanilla_benign: 0.9320 (250 samples)
+vanilla_harmful: 0.8440 (250 samples)
+
+================================================================================

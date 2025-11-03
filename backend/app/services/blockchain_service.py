@@ -466,7 +466,7 @@ class BlockchainService:
     
     def verify_transaction_hash(self, transaction_hash: str) -> Dict[str, Any]:
         """
-        Etherscan API를 통해 트랜잭션 해시 검증
+        Web3를 통해 트랜잭션 해시 검증 (Etherscan API 대신 직접 RPC 사용)
         
         Args:
             transaction_hash: 검증할 트랜잭션 해시
@@ -480,42 +480,15 @@ class BlockchainService:
         total_verification_start = time.time()
         
         try:
-            # Sepolia Etherscan API URL
-            etherscan_url = "https://api-sepolia.etherscan.io/api"
-            api_key = Config.ETHERSCAN_API_KEY or ''
+            # Web3를 사용하여 트랜잭션 정보 조회
+            rpc_call_start = time.time()
+            tx = self.w3.eth.get_transaction(transaction_hash)
+            rpc_call_time_tx = time.time() - rpc_call_start
             
-            # 트랜잭션 정보 조회
-            params = {
-                'module': 'proxy',
-                'action': 'eth_getTransactionByHash',
-                'txhash': transaction_hash,
-                'apikey': api_key
-            }
+            # 디버깅을 위한 로그
+            print(f"Web3 트랜잭션 조회 성공: {transaction_hash}")
             
-            # API 호출 시간 측정
-            api_call_start = time.time()
-            response = requests.get(etherscan_url, params=params, timeout=20)  # 10초 → 20초 (200% 증가)
-            response.raise_for_status()
-            data = response.json()
-            api_call_time_tx = time.time() - api_call_start
-            
-            # 디버깅을 위한 로그 (개발 환경에서만)
-            print(f"Etherscan API 응답 (트랜잭션): {data}")
-            
-            if 'error' in data:
-                error_msg = data['error']
-                if isinstance(error_msg, dict):
-                    error_message = error_msg.get('message', str(error_msg))
-                else:
-                    error_message = str(error_msg)
-                return {
-                    'exists': False,
-                    'status': 'error',
-                    'error_message': error_message
-                }
-            
-            # 트랜잭션이 존재하는지 확인
-            if data['result'] is None:
+            if tx is None:
                 return {
                     'exists': False,
                     'status': 'error',
@@ -523,54 +496,31 @@ class BlockchainService:
                 }
             
             # 트랜잭션 영수증 조회
-            receipt_params = {
-                'module': 'proxy',
-                'action': 'eth_getTransactionReceipt',
-                'txhash': transaction_hash,
-                'apikey': api_key
-            }
+            rpc_call_receipt_start = time.time()
+            receipt = self.w3.eth.get_transaction_receipt(transaction_hash)
+            rpc_call_time_receipt = time.time() - rpc_call_receipt_start
             
-            # API 호출 시간 측정
-            api_call_receipt_start = time.time()
-            receipt_response = requests.get(etherscan_url, params=receipt_params, timeout=20)  # 10초 → 20초 (200% 증가)
-            receipt_response.raise_for_status()
-            receipt_data = receipt_response.json()
-            api_call_time_receipt = time.time() - api_call_receipt_start
+            # 디버깅을 위한 로그
+            print(f"Web3 영수증 조회 성공")
             
-            # 디버깅을 위한 로그 (개발 환경에서만)
-            print(f"Etherscan API 응답 (영수증): {receipt_data}")
-            
-            if 'error' in receipt_data:
-                error_msg = receipt_data['error']
-                if isinstance(error_msg, dict):
-                    error_message = error_msg.get('message', str(error_msg))
-                else:
-                    error_message = str(error_msg)
-                return {
-                    'exists': False,
-                    'status': 'error',
-                    'error_message': error_message
-                }
-            
-            receipt = receipt_data['result']
-            
-            # 트랜잭션 영수증이 없는 경우
+            # 트랜잭션 영수증이 없는 경우 (pending 상태)
             if receipt is None:
                 return {
-                    'exists': False,
-                    'status': 'error',
-                    'error_message': '트랜잭션 영수증을 찾을 수 없습니다'
+                    'exists': True,
+                    'status': 'pending',
+                    'error_message': '트랜잭션이 아직 처리되지 않았습니다 (pending 상태)',
+                    'transaction_hash': transaction_hash,
+                    'from_address': tx.get('from'),
+                    'to_address': tx.get('to'),
+                    'value': tx.get('value'),
+                    'etherscan_url': f"https://sepolia.etherscan.io/tx/{transaction_hash}"
                 }
             
             # 트랜잭션 성공 여부 확인
-            status = receipt.get('status', '0x0')
-            is_success = status == '0x1'
-            
-            # 트랜잭션 정보 안전하게 접근
-            tx_result = data['result']
+            is_success = receipt.status == 1
             
             # Input Data 추출 및 디코딩
-            input_data_hex = tx_result.get('input', '0x')
+            input_data_hex = tx.get('input', '0x')
             decoded_input_data = None
             hash_verification = None
             hash_verification_time = 0
@@ -594,35 +544,37 @@ class BlockchainService:
             return {
                 'exists': True,
                 'transaction_hash': transaction_hash,
-                'block_number': int(receipt['blockNumber'], 16) if receipt.get('blockNumber') else None,
-                'gas_used': int(receipt['gasUsed'], 16) if receipt.get('gasUsed') else None,
+                'block_number': receipt.blockNumber,
+                'gas_used': receipt.gasUsed,
                 'status': 'success' if is_success else 'failed',
                 'is_success': is_success,
-                'from_address': tx_result.get('from'),
-                'to_address': tx_result.get('to'),
-                'value': tx_result.get('value'),
+                'from_address': tx.get('from'),
+                'to_address': tx.get('to'),
+                'value': tx.get('value'),
                 'etherscan_url': f"https://sepolia.etherscan.io/tx/{transaction_hash}",
                 'input_data': decoded_input_data,
                 'hash_verification': hash_verification,
                 'timing': {
-                    'api_call_time_tx': api_call_time_tx,
-                    'api_call_time_receipt': api_call_time_receipt,
+                    'rpc_call_time_tx': rpc_call_time_tx,
+                    'rpc_call_time_receipt': rpc_call_time_receipt,
                     'hash_verification_time': hash_verification_time,
                     'total_verification_time': total_verification_time
                 }
             }
             
-        except requests.exceptions.RequestException as e:
-            return {
-                'exists': False,
-                'status': 'error',
-                'error_message': f'Etherscan API 요청 실패: {str(e)}'
-            }
         except Exception as e:
+            # 트랜잭션을 찾을 수 없는 경우
+            error_msg = str(e)
+            if "not found" in error_msg.lower() or "unknown" in error_msg.lower():
+                return {
+                    'exists': False,
+                    'status': 'error',
+                    'error_message': '트랜잭션을 찾을 수 없습니다'
+                }
             return {
                 'exists': False,
                 'status': 'error',
-                'error_message': str(e)
+                'error_message': f'트랜잭션 조회 실패: {error_msg}'
             }
     
     def _decode_input_data(self, input_data_hex: str) -> Dict[str, Any]:
@@ -660,7 +612,12 @@ class BlockchainService:
     
     def _verify_hash_from_input_data(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Input Data로부터 해시 역계산 및 검증
+        Input Data로부터 HMAC 해시 역계산 및 검증
+        
+        보안 강화:
+        - HMAC-SHA256 방식 사용
+        - Secret key 없이는 올바른 해시를 생성할 수 없음
+        - 네트워크 중간 공격(MITM)으로 데이터와 해시를 함께 수정하는 것 방지
         
         Args:
             input_data: 디코딩된 Input Data
@@ -670,6 +627,7 @@ class BlockchainService:
         """
         try:
             import hashlib
+            import hmac
             import json
             
             # 해시 재계산을 위한 데이터 구성 (HashService 방식)
@@ -697,8 +655,17 @@ class BlockchainService:
             # JSON 문자열로 변환 (HashService와 동일한 방식)
             json_string = json.dumps(hash_data, sort_keys=True, ensure_ascii=False)
             
-            # SHA-256 해시 계산
-            calculated_hash = hashlib.sha256(json_string.encode('utf-8')).hexdigest()
+            # HMAC secret key 가져오기
+            secret_key = Config.HMAC_SECRET_KEY
+            if not secret_key:
+                raise ValueError("HMAC_SECRET_KEY가 설정되지 않았습니다. 환경변수를 확인해주세요.")
+            
+            # 🔐 HMAC-SHA256 해시 계산 (보안 강화)
+            calculated_hash = hmac.new(
+                key=secret_key.encode('utf-8'),
+                msg=json_string.encode('utf-8'),
+                digestmod=hashlib.sha256
+            ).hexdigest()
             
             # 원본 해시와 비교
             original_hash = input_data['hash']
@@ -706,21 +673,22 @@ class BlockchainService:
             
             # 로그 출력
             print("=" * 80)
-            print("🔍 HASH VERIFICATION FROM BLOCKCHAIN INPUT DATA")
+            print("🔍 HMAC HASH VERIFICATION FROM BLOCKCHAIN INPUT DATA")
             print("=" * 80)
-            print(f"원본 해시:   {original_hash}")
-            print(f"계산된 해시: {calculated_hash}")
-            print(f"일치 여부:   {'✅ 일치' if hash_matches else '❌ 불일치'}")
+            print(f"원본 HMAC 해시:   {original_hash}")
+            print(f"계산된 HMAC 해시: {calculated_hash}")
+            print(f"일치 여부:        {'✅ 일치' if hash_matches else '❌ 불일치'}")
+            print(f"🔑 보안:          Secret key로 검증됨 (네트워크 중간 공격 방지)")
             print("=" * 80)
             
             return {
                 'verified': hash_matches,
                 'original_hash': original_hash,
                 'calculated_hash': calculated_hash,
-                'message': '해시가 일치합니다. 데이터 무결성이 확인되었습니다.' if hash_matches else '해시가 일치하지 않습니다. 데이터가 변조되었을 수 있습니다.'
+                'message': 'HMAC 해시가 일치합니다. 데이터 무결성과 인증이 확인되었습니다.' if hash_matches else 'HMAC 해시가 일치하지 않습니다. 데이터가 변조되었거나 인증되지 않은 출처입니다.'
             }
         except Exception as e:
-            print(f"해시 검증 오류: {str(e)}")
+            print(f"HMAC 해시 검증 오류: {str(e)}")
             return {
                 'verified': False,
                 'error': str(e)

@@ -9,13 +9,13 @@ class ConsensusService:
     
     def __init__(self):
         self.llm_service = LLMService()
-        # 5개의 LLM 모델 정의
+        # 5개의 LLM 모델 정의 (실험과 동일한 모델 사용)
         self.consensus_models = [
-            {'provider': 'openai', 'model': 'gpt-5-mini'},
-            {'provider': 'grok', 'model': 'llama-3.3-70b-instruct:free'},
-            {'provider': 'claude', 'model': 'claude-3.7-sonnet'},
+            {'provider': 'openai', 'model': 'gpt-3.5-turbo'},
+            {'provider': 'claude', 'model': 'claude-3-haiku'},
             {'provider': 'gemini', 'model': 'gemini-2.5-flash-lite'},
-            {'provider': 'deepseek', 'model': 'deepseek-chat-v3.1:free'}
+            {'provider': 'llama', 'model': 'llama-3.1-8b-instruct'},
+            {'provider': 'deepseek', 'model': 'deepseek-chat'}
         ]
         self.consensus_threshold = 3  # 3명 이상 동의 필요
         self.consensus_timeout = 60  # 30초 → 60초 (200% 증가)
@@ -54,10 +54,12 @@ Your response should be exactly "True" or "False" with no additional text or exp
             response_time = time.time() - start_time
             
             is_harmful = self.parse_consensus_response(response['content'])
+            print(f"[Consensus] {model_info['provider']} - Harmful: {is_harmful}, Time: {response_time:.2f}s, Response: {response['content'][:50]}")
             return model_info['provider'], is_harmful, response_time
             
         except Exception as e:
             # 오류 발생 시 기본적으로 False (안전하다고 가정)
+            print(f"[Consensus Error] {model_info['provider']} failed: {str(e)}")
             return model_info['provider'], False, 0.0
     
     def run_consensus_validation(self, original_prompt: str) -> Dict[str, Any]:

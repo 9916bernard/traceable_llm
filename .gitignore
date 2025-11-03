@@ -78,9 +78,9 @@ keys.md
 MASTER_KEYS.md
 SEPOLIA_SETUP.md
 
-# Analysis results and test files
-analysis/results/
-analysis/test_*.py
-analysis/test_*.csv
-analysis/*.log
-analysis/experiment_log.txt
+# # Analysis results and test files
+# analysis/results/
+# analysis/test_*.py
+# analysis/test_*.csv
+# analysis/*.log
+# analysis/experiment_log.txt

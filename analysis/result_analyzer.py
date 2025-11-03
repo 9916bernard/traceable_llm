@@ -186,12 +186,22 @@ class ResultAnalyzer:
             polar=dict(
                 radialaxis=dict(
                     visible=True,
-                    range=[0, 1]
+                    range=[0, 1],
+                    tickfont=dict(size=20)
+                ),
+                angularaxis=dict(
+                    tickfont=dict(size=24)
                 )
             ),
             showlegend=True,
-            title="Model Performance Metrics Comparison",
-            font=dict(size=12)
+            title=dict(
+                text="Model Performance Metrics Comparison",
+                font=dict(size=20)
+            ),
+            legend=dict(
+                font=dict(size=22)
+            ),
+            font=dict(size=22)
         )
         
         output_path = os.path.join(VISUALIZATIONS_DIR, f"{self.experiment_name}_metrics_radar.html")

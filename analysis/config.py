@@ -18,7 +18,7 @@ FREE_MODELS = {
     'deepseek': 'deepseek/deepseek-chat-v3.1:free'
 }
 
-# 최저가 유료 모델 설정 (비용 최적화)
+# 최저가 유료 모델 설정 (비용 최적화) - Consensus와 align
 PREMIUM_MODELS = {
     'openai': 'openai/gpt-3.5-turbo',  # $0.50/1M tokens (가장 저렴)
     'claude': 'anthropic/claude-3-haiku',  # $0.25/1M tokens (가장 저렴)
@@ -26,6 +26,9 @@ PREMIUM_MODELS = {
     'llama': 'meta-llama/llama-3.1-8b-instruct',  # $0.20/1M tokens (저렴)
     'deepseek': 'deepseek/deepseek-chat'  # $0.14/1M tokens (저렴)
 }
+
+# Consensus에서 실제 사용하는 모델 (백엔드와 동일)
+CONSENSUS_MODELS = PREMIUM_MODELS
 
 # 데이터셋 설정
 DATASET_NAME = "allenai/wildjailbreak"

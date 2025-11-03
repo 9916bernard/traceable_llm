@@ -17,6 +17,11 @@ class Config:
     CONTRACT_ADDRESS = os.environ.get('CONTRACT_ADDRESS')
     ETHERSCAN_API_KEY = os.environ.get('ETHERSCAN_API_KEY')
     
+    # HMAC 보안 해시 설정
+    # HMAC secret key - 별도 설정이 없으면 PRIVATE_KEY 사용 (보안 강화)
+    # 공격자가 네트워크 중간에서 데이터와 해시를 함께 수정하는 것을 방지
+    HMAC_SECRET_KEY = os.environ.get('HMAC_SECRET_KEY') or os.environ.get('PRIVATE_KEY')
+    
     # CORS 설정
     CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:3000').split(',')
 
