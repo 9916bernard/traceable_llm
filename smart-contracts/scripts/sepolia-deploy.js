@@ -66,7 +66,7 @@ async function main() {
   console.log(`   - Explorer: https://sepolia.etherscan.io/address/${contractAddress}`);
   console.log("   - Faucet: https://sepoliafaucet.com/");
   console.log("   - 네트워크 이름: Sepolia");
-  console.log("   - RPC URL: https://sepolia.infura.io/v3/***REMOVED***");
+  console.log("   - RPC URL: https://sepolia.infura.io/v3/YOUR_PROJECT_ID");
 
   // 테스트 안내
   console.log("\n🧪 테스트 방법:");

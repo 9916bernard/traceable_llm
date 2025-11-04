@@ -21,8 +21,8 @@ module.exports = {
       chainId: 31337,
     },
     sepolia: {
-      url: process.env.SEPOLIA_RPC_URL || "https://sepolia.infura.io/v3/***REMOVED***",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : ["***REMOVED***"],
+      url: process.env.SEPOLIA_RPC_URL || "https://sepolia.infura.io/v3/YOUR_PROJECT_ID",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 11155111,
       gasPrice: 1000000000, // 1 gwei (더 낮은 가스 가격으로 설정)
       gas: 300000, // 가스 한계 증가
