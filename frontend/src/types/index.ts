@@ -25,6 +25,7 @@ export interface LLMResponse {
   response_time: number;
   model: string;
   provider: string;
+  consensus_only?: boolean;
   consensus_result?: ConsensusResult;
   blockchain_commit?: {
     transaction_hash?: string;
@@ -86,7 +87,7 @@ export interface VerificationRequest {
 export interface VerificationResponse {
   verified: boolean;
   transaction_hash: string;
-  blockchain_info: {
+  blockchain_info?: {
     exists: boolean;
     transaction_hash?: string;
     block_number?: number;
@@ -103,6 +104,16 @@ export interface VerificationResponse {
     from_address: string;
     our_official_address: string;
     origin_verified: boolean;
+  };
+  input_data?: {
+    llm_provider: string;
+    model_name: string;
+    timestamp?: string;
+    consensus_votes?: string;
+    prompt: string;
+    response: string;
+    hash: string;
+    parameters?: string;
   };
   message: string;
 }

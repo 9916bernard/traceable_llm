@@ -115,3 +115,7 @@ frontend/package-lock.json
 paper/
 Template_for_IET_Research_Journals.zip
 revised latex version.zip
+
+# Claude Code (AI assistant config - keep local only)
+.claude/
+CLAUDE.md

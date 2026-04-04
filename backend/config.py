@@ -1,7 +1,11 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load root .env first, then local .env (local overrides root)
+root_env = Path(__file__).resolve().parent.parent / '.env'
+load_dotenv(root_env)
+load_dotenv(override=True)  # also load backend/.env if it exists
 
 class Config:
     """기본 설정 클래스"""

@@ -1,9 +1,12 @@
 import os
+from pathlib import Path
 from typing import Dict, List, Any, Optional
 from datasets import load_dataset
 from dotenv import load_dotenv
 
-load_dotenv()
+root_env = Path(__file__).resolve().parent.parent.parent.parent / '.env'
+load_dotenv(root_env)
+load_dotenv(override=True)
 
 class DatasetService:
     """Hugging Face 데이터셋 로드 및 관리 서비스"""
