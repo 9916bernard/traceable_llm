@@ -24,7 +24,7 @@ from datetime import datetime
 
 # Paths
 V1_DATA_DIR = "analysis/results/blockchain_performance/raw_data"
-V2_DATA_DIR = "analysis/results/blockchain_performance_v2/raw_data"
+V2_DATA_DIR = "analysis/results/blockchain_performance_v2_final/raw_data"
 VIS_DIR = "analysis/results/visualizations"
 REPORTS_DIR = "analysis/results/reports"
 

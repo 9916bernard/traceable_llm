@@ -282,6 +282,8 @@ class V2PerformanceTester:
         )
         self.ipfs = IPFSTester() if with_ipfs else None
         self.results: List[Dict] = []
+        # Track nonce locally to avoid "replacement transaction underpriced"
+        self.nonce = self.w3.eth.get_transaction_count(self.account.address)
 
         print(f"Connected to Sepolia: {self.w3.is_connected()}")
         print(f"Account: {self.account.address}")
@@ -289,6 +291,7 @@ class V2PerformanceTester:
         print(f"Balance: {self.w3.from_wei(bal, 'ether'):.6f} ETH")
         print(f"V2 Contract: {CONTRACT_ADDRESS_V2}")
         print(f"IPFS enabled: {with_ipfs and self.ipfs.available}")
+        print(f"Starting nonce: {self.nonce}")
 
     def run_single_test(self, test_num: int, total: int) -> Dict[str, Any]:
         prompt, response, category = get_prompt_category(test_num, total)
@@ -352,15 +355,13 @@ class V2PerformanceTester:
             if gas_price < 1_000_000_000:
                 gas_price = 1_000_000_000  # min 1 gwei
 
-            nonce = self.w3.eth.get_transaction_count(self.account.address)
-
             tx = self.contract.functions.storeRecord(
                 content_hash, ipfs_cid, "3/5"
             ).build_transaction({
                 "from": self.account.address,
                 "gas": gas_limit,
                 "gasPrice": int(gas_price * 1.5),
-                "nonce": nonce,
+                "nonce": self.nonce,
             })
 
             signed = self.w3.eth.account.sign_transaction(
@@ -378,6 +379,9 @@ class V2PerformanceTester:
             receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
             confirm_time = time.time() - confirm_start
             total_commit_time = submit_time + confirm_time
+
+            # Increment nonce after successful confirmation
+            self.nonce += 1
 
             gas_used = receipt.gasUsed
             effective_gas_price = receipt.get("effectiveGasPrice", gas_price)
@@ -435,6 +439,11 @@ class V2PerformanceTester:
             result["error"] = str(e)
             if "insufficient funds" in str(e).lower():
                 result["insufficient_funds"] = True
+            # Resync nonce from network on failure
+            try:
+                self.nonce = self.w3.eth.get_transaction_count(self.account.address)
+            except Exception:
+                pass
 
         return result
 
