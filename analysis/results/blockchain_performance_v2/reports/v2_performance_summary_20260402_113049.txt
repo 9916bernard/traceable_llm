@@ -1,0 +1,41 @@
+======================================================================
+V2 BLOCKCHAIN PERFORMANCE REPORT
+Date: 2026-04-02T11:30:49.211885
+Contract: 0xb8B761C1513e8e4F52FBf04E5094e3CcF4434C2E
+======================================================================
+
+Total tests: 3
+Successful: 3
+Failed: 0
+
+COMMIT LATENCY
+  Mean:   9.807s
+  Median: 9.752s
+  Std:    0.452s
+  Min:    9.282s
+  Max:    10.385s
+  P50:    9.752s
+  P90:    10.259s
+  P95:    10.322s
+  P99:    10.372s
+
+GAS USAGE
+  Mean:   239,724
+  Median: 234,024
+  Min:    234,024
+  Max:    251,124
+  Cost:   0.00035959 ETH/tx
+
+VERIFICATION LATENCY
+  Mean:   0.162s
+  Median: 0.154s
+
+BY CATEGORY
+  short   : n=  1  gas_mean=251,124  latency_mean=10.385s
+  medium  : n=  1  gas_mean=234,024  latency_mean=9.752s
+  long    : n=  1  gas_mean=234,024  latency_mean=9.282s
+
+V1 vs V2 GAS COMPARISON
+  V1 avg gas: 510,662
+  V2 avg gas: 239,724
+  Reduction:  53.1%

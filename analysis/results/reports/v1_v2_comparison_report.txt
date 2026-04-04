@@ -1,0 +1,36 @@
+======================================================================
+V1 vs V2 BLOCKCHAIN PERFORMANCE COMPARISON REPORT
+Generated: 2026-04-02T11:48:13.937210
+======================================================================
+
+SUMMARY
+--------------------------------------------------
+Metric                             V1 (Plaintext)     V2 (Hash+IPFS)
+----------------------------------------------------------------------
+Transactions                                   75                 64
+Commit Latency (mean)                     10.167s             8.979s
+Commit Latency (median)                   11.076s             9.443s
+Commit Latency (p90)                      14.412s            13.094s
+Commit Latency (p95)                      21.450s            14.023s
+Gas Used (mean)                           510,662            234,289
+Gas Reduction                                                  54.1%
+L1 Cost/tx (USD)               $           1.2767 $           0.8786
+Cost Reduction                                                 31.2%
+Verify Latency (mean)                      0.409s             0.177s
+
+
+V2 PERFORMANCE BY PROMPT CATEGORY
+--------------------------------------------------
+  short   : n= 24  gas=   234,734  latency=9.512s
+  medium  : n= 19  gas=   234,021  latency=8.941s
+  long    : n= 21  gas=   234,023  latency=8.404s
+
+V2 L2 COST PROJECTIONS (ETH ~$2500)
+--------------------------------------------------
+  L1 Mainnet     : $0.878585 USD/tx
+  Polygon PoS    : $0.008786 USD/tx
+  Arbitrum       : $0.043929 USD/tx
+  Optimism       : $0.043929 USD/tx
+  Base           : $0.017572 USD/tx
+
+======================================================================

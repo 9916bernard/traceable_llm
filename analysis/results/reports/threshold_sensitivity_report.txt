@@ -1,0 +1,94 @@
+================================================================================
+THRESHOLD SENSITIVITY ANALYSIS REPORT
+================================================================================
+
+1. METRICS BY THRESHOLD (k-out-of-5)
+------------------------------------------------------------
+  k   Accuracy  Precision     Recall         F1        FPR        FNR
+------------------------------------------------------------
+  1     0.8699     0.8835     0.9768     0.9278     0.7667     0.0232
+  2     0.8055     0.9618     0.8048     0.8763     0.1905     0.1952
+  3     0.7212     0.9862     0.6840     0.8077     0.0571     0.3160 <-- current
+  4     0.6116     0.9914     0.5512     0.7085     0.0286     0.4488
+  5     0.3938     0.9973     0.2928     0.4527     0.0048     0.7072
+
+Optimal threshold by F1: k=1 (F1=0.9278)
+
+2. CATEGORY BREAKDOWN BY THRESHOLD
+------------------------------------------------------------
+
+  k=1:
+    adversarial_benign: 0.2333 (n=210)
+    adversarial_harmful: 0.9860 (n=1000)
+    vanilla_harmful: 0.9400 (n=250)
+
+  k=2:
+    adversarial_benign: 0.8095 (n=210)
+    adversarial_harmful: 0.7870 (n=1000)
+    vanilla_harmful: 0.8760 (n=250)
+
+  k=3:
+    adversarial_benign: 0.9429 (n=210)
+    adversarial_harmful: 0.6530 (n=1000)
+    vanilla_harmful: 0.8080 (n=250)
+
+  k=4:
+    adversarial_benign: 0.9714 (n=210)
+    adversarial_harmful: 0.4960 (n=1000)
+    vanilla_harmful: 0.7720 (n=250)
+
+  k=5:
+    adversarial_benign: 0.9952 (n=210)
+    adversarial_harmful: 0.2000 (n=1000)
+    vanilla_harmful: 0.6640 (n=250)
+
+
+3. WEIGHTED VOTING ANALYSIS
+------------------------------------------------------------
+  Model weights (based on individual F1 score):
+    openai: 0.9202
+    claude: 0.8393
+    gemini: 0.7413
+    deepseek: 0.8132
+    llama: 0.4827
+
+  Best weighted threshold: 0.01
+  Best weighted F1: 0.9278
+  Best weighted accuracy: 0.8699
+
+
+4. BAYESIAN INDEPENDENCE ANALYSIS
+------------------------------------------------------------
+  Per-model empirical accuracy:
+    openai: 0.8575
+    claude: 0.7548
+    gemini: 0.6452
+    deepseek: 0.7288
+    llama: 0.4158
+
+  Theoretical P(majority correct) under independence:
+    k=1: 0.9980
+    k=2: 0.9699
+    k=3: 0.8244 <-- current
+    k=4: 0.4831
+    k=5: 0.1265
+
+
+5. JUSTIFICATION FOR k=3
+------------------------------------------------------------
+  k=3 achieves F1=0.8077 with balanced
+  precision (0.9862) and recall (0.6840).
+
+  Compared to k=2: higher precision (+0.0244),
+  lower FPR (0.0571 vs 0.1905).
+
+  Compared to k=4: higher recall (+0.1328),
+  lower FNR (0.3160 vs 0.4488).
+
+  k=3 is the simple majority threshold (3/5 = 60%) and provides
+  Byzantine fault tolerance for up to 2 compromised models.
+  The Bayesian theoretical accuracy under independence is
+  0.8244, consistent with
+  empirical accuracy of 0.7212.
+
+================================================================================
