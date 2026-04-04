@@ -99,8 +99,8 @@ export default function VerificationChecker() {
             </div>
           </div>
 
-          {/* Three-check summary */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
+          {/* Check summary */}
+          <div className={`grid gap-3 mb-6 ${result.version === 'v2' ? 'grid-cols-4' : 'grid-cols-3'}`}>
             <CheckCard
               label="Hash Exists"
               status={result.verified}
@@ -111,6 +111,13 @@ export default function VerificationChecker() {
               status={result.verified}
               detail={result.verified ? 'Recalculation matches' : 'N/A'}
             />
+            {result.version === 'v2' && (
+              <CheckCard
+                label="IPFS Data"
+                status={result.ipfs_data ? true : null}
+                detail={result.ipfs_data ? 'Retrieved' : 'Not found'}
+              />
+            )}
             <CheckCard
               label="Origin"
               status={result.origin_verification?.origin_verified ?? null}
@@ -134,6 +141,31 @@ export default function VerificationChecker() {
                 <div>
                   <span className="text-xs text-[var(--color-ink-muted)]">Expected</span>
                   <div className="mono-display">{result.origin_verification.our_official_address}</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* IPFS Info (V2) */}
+          {result.ipfs_cid && (
+            <div className="card mb-4">
+              <span className="label">IPFS Record</span>
+              <div className="space-y-2 mt-2">
+                <div>
+                  <span className="text-xs text-[var(--color-ink-muted)]">CID</span>
+                  <div className="mono-display flex items-center justify-between gap-2">
+                    <span className="break-all">{result.ipfs_cid}</span>
+                    {result.ipfs_gateway_url && (
+                      <a
+                        href={result.ipfs_gateway_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-[var(--color-accent)] hover:underline whitespace-nowrap"
+                      >
+                        View on IPFS
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

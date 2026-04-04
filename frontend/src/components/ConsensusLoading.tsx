@@ -11,10 +11,11 @@ const steps = [
   { key: 'consensus_validation' as const, label: 'Consensus validation', desc: '5-model safety vote' },
   { key: 'llm_generation' as const, label: 'LLM generation', desc: 'Response from selected model' },
   { key: 'hash_creation' as const, label: 'Hash creation', desc: 'HMAC-SHA256 canonicalization' },
-  { key: 'blockchain_commit' as const, label: 'Blockchain commit', desc: 'Anchor to Sepolia' },
+  { key: 'ipfs_pin' as const, label: 'IPFS pin', desc: 'Pin record to IPFS via Pinata' },
+  { key: 'blockchain_commit' as const, label: 'Blockchain commit', desc: 'Anchor hash + CID to Sepolia' },
 ];
 
-const stepOrder = ['idle', 'consensus_validation', 'llm_generation', 'hash_creation', 'blockchain_commit', 'completed'];
+const stepOrder = ['idle', 'consensus_validation', 'llm_generation', 'hash_creation', 'ipfs_pin', 'blockchain_commit', 'completed'];
 
 export default function ConsensusLoading({ currentStep, consensusResult, error }: ConsensusLoadingProps) {
   const currentIndex = stepOrder.indexOf(currentStep);

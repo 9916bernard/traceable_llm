@@ -4,6 +4,7 @@ from app.services.llm_service import LLMService
 from app.services.hash_service import HashService
 from app.services.blockchain_service import BlockchainService
 from app.services.consensus_service import ConsensusService
+from app.services.ipfs_service import IPFSService
 from config import Config
 
 llm_bp = Blueprint('llm', __name__)
@@ -69,30 +70,62 @@ def generate_with_verification():
         }
         
         # 4. 블록체인에 커밋
-        if commit_to_blockchain and Config.CONTRACT_ADDRESS:
+        consensus_votes_str = f"{consensus_result['safe_votes']}/{consensus_result['total_models']}"
+
+        if commit_to_blockchain and Config.CONTRACT_ADDRESS_V2 and Config.PINATA_API_KEY:
+            # V2 path: IPFS pin → hash-only contract
+            ipfs_service = IPFSService(Config.PINATA_API_KEY, Config.PINATA_API_SECRET)
+            ipfs_record = {
+                'llm_provider': provider,
+                'model_name': model,
+                'prompt': prompt,
+                'response': llm_response['content'],
+                'parameters': parameters,
+                'timestamp': timestamp.isoformat(),
+                'consensus_votes': consensus_votes_str,
+                'hash_value': hash_value,
+            }
+            ipfs_result = ipfs_service.pin_to_ipfs(ipfs_record, name=f"llm-{hash_value[:8]}")
+
+            blockchain_service = BlockchainService(
+                Config.ETHEREUM_RPC_URL,
+                Config.PRIVATE_KEY,
+                Config.CONTRACT_ADDRESS_V2,
+                contract_version='v2'
+            )
+            commit_result = blockchain_service.commit_hash_v2(
+                hash_value,
+                ipfs_result['cid'],
+                consensus_votes_str,
+                wait_for_confirmation=False
+            )
+            result['blockchain_commit'] = commit_result
+            result['ipfs_cid'] = ipfs_result['cid']
+            result['ipfs_gateway_url'] = ipfs_result['gateway_url']
+
+            if commit_result.get('status') in ['success', 'pending'] and commit_result.get('transaction_hash'):
+                result['hash_value'] = commit_result['transaction_hash']
+
+        elif commit_to_blockchain and Config.CONTRACT_ADDRESS:
+            # V1 fallback: full plaintext on-chain
             blockchain_service = BlockchainService(
                 Config.ETHEREUM_RPC_URL,
                 Config.PRIVATE_KEY,
                 Config.CONTRACT_ADDRESS
             )
-            # 해시 생성 시 사용된 정확한 timestamp와 consensus_votes 전달
-            # timestamp를 그대로 전달 (마이크로초 포함)
-            consensus_votes_str = f"{consensus_result['safe_votes']}/{consensus_result['total_models']}"
-            
             commit_result = blockchain_service.commit_hash(
-                hash_value, 
-                prompt, 
-                llm_response['content'], 
-                provider, 
+                hash_value,
+                prompt,
+                llm_response['content'],
+                provider,
                 model,
-                timestamp,  # datetime 객체 그대로 전달
-                parameters,  # 파라미터 전달
+                timestamp,
+                parameters,
                 consensus_votes_str,
-                wait_for_confirmation=False  # TX submission만, confirmation은 대기하지 않음
+                wait_for_confirmation=False
             )
             result['blockchain_commit'] = commit_result
-            
-            # 성공적으로 커밋된 경우 (pending 포함), 로컬 해시 대신 트랜잭션 해시를 반환
+
             if commit_result.get('status') in ['success', 'pending'] and commit_result.get('transaction_hash'):
                 result['hash_value'] = commit_result['transaction_hash']
         

@@ -75,6 +75,8 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
     await new Promise(resolve => setTimeout(resolve, 1500));
     setCurrentStep('hash_creation');
     await new Promise(resolve => setTimeout(resolve, 500));
+    setCurrentStep('ipfs_pin');
+    await new Promise(resolve => setTimeout(resolve, 500));
     setCurrentStep('blockchain_commit');
     await new Promise(resolve => setTimeout(resolve, 1000));
   };
@@ -211,6 +213,34 @@ export default function LLMGenerator({ models }: LLMGeneratorProps) {
               Allow 10-30s before verifying a newly anchored record.
             </p>
           </div>
+
+          {/* IPFS CID (V2) */}
+          {result.ipfs_cid && (
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="label mb-0">IPFS CID</span>
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={() => result.ipfs_cid && copyToClipboard(result.ipfs_cid).then(ok => ok && toast.success('Copied'))}
+                    className="text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+                  >
+                    Copy
+                  </button>
+                  {result.ipfs_gateway_url && (
+                    <a
+                      href={result.ipfs_gateway_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-[var(--color-accent)] hover:underline"
+                    >
+                      View on IPFS
+                    </a>
+                  )}
+                </div>
+              </div>
+              <div className="mono-display">{result.ipfs_cid}</div>
+            </div>
+          )}
 
           {/* Metadata row */}
           <div className="grid grid-cols-3 gap-4 text-sm mb-6">
