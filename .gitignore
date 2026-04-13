@@ -116,6 +116,16 @@ paper/
 Template_for_IET_Research_Journals.zip
 revised latex version.zip
 
+# LaTeX reviewer response (kept local only)
+reviewer_response.tex
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+*.out
+
 # Claude Code (AI assistant config - keep local only)
 .claude/
 CLAUDE.md

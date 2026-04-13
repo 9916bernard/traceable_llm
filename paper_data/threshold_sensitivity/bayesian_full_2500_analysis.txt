@@ -1,0 +1,27 @@
+Bayesian Independence Analysis (Full 2,500 samples)
+============================================================
+
+Per-model accuracy:
+  openai: 0.6592
+  claude: 0.8264
+  gemini: 0.8164
+  llama: 0.6836
+  deepseek: 0.8468
+
+Theoretical P(majority correct) under independence:
+  k=1: 0.9995
+  k=2: 0.9896
+  k=3: 0.9177
+  k=4: 0.6683
+  k=5: 0.2575
+
+Empirical consensus accuracy at k=3: 0.8536
+
+Comparison at k=3:
+  Theoretical (independence): 0.9177
+  Empirical: 0.8536
+  Gap: 0.0641 (6.4 percentage points)
+  
+The theoretical bound exceeds empirical accuracy, indicating that
+model errors are partially correlated (not fully independent).
+This is expected since all models evaluate the same prompts.
