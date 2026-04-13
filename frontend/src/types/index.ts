@@ -25,6 +25,7 @@ export interface LLMResponse {
   response_time: number;
   model: string;
   provider: string;
+  consensus_only?: boolean;
   consensus_result?: ConsensusResult;
   blockchain_commit?: {
     transaction_hash?: string;
@@ -32,6 +33,8 @@ export interface LLMResponse {
     status: string;
     error_message?: string;
   };
+  ipfs_cid?: string;
+  ipfs_gateway_url?: string;
 }
 
 // Consensus 관련 타입 정의
@@ -53,11 +56,12 @@ export interface ModelResponse {
 }
 
 // 로딩 단계 타입 정의
-export type LoadingStep = 
+export type LoadingStep =
   | 'idle'
   | 'consensus_validation'
   | 'llm_generation'
   | 'hash_creation'
+  | 'ipfs_pin'
   | 'blockchain_commit'
   | 'completed'
   | 'error';
@@ -85,8 +89,9 @@ export interface VerificationRequest {
 
 export interface VerificationResponse {
   verified: boolean;
+  version?: 'v1' | 'v2';
   transaction_hash: string;
-  blockchain_info: {
+  blockchain_info?: {
     exists: boolean;
     transaction_hash?: string;
     block_number?: number;
@@ -104,6 +109,19 @@ export interface VerificationResponse {
     our_official_address: string;
     origin_verified: boolean;
   };
+  input_data?: {
+    llm_provider: string;
+    model_name: string;
+    timestamp?: string;
+    consensus_votes?: string;
+    prompt: string;
+    response: string;
+    hash: string;
+    parameters?: string;
+  };
+  ipfs_cid?: string;
+  ipfs_gateway_url?: string;
+  ipfs_data?: Record<string, any>;
   message: string;
 }
 

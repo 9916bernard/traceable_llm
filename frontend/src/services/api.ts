@@ -76,6 +76,12 @@ export const verificationApi = {
     const response: AxiosResponse<VerificationResponse> = await api.post('/verification/verify', request);
     return response.data;
   },
+
+  // IPFS 레코드 조회
+  retrieveIpfs: async (cid: string): Promise<{ cid: string; gateway_url: string; data: any }> => {
+    const response = await api.post('/verification/retrieve-ipfs', { cid });
+    return response.data;
+  },
 };
 
 // 블록체인 API 서비스 (verification 라우트로 이동)

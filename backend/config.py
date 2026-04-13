@@ -1,7 +1,11 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load root .env first, then local .env (local overrides root)
+root_env = Path(__file__).resolve().parent.parent / '.env'
+load_dotenv(root_env)
+load_dotenv(override=True)  # also load backend/.env if it exists
 
 class Config:
     """기본 설정 클래스"""
@@ -16,7 +20,14 @@ class Config:
     PRIVATE_KEY = os.environ.get('PRIVATE_KEY')
     CONTRACT_ADDRESS = os.environ.get('CONTRACT_ADDRESS')
     ETHERSCAN_API_KEY = os.environ.get('ETHERSCAN_API_KEY')
-    
+
+    # V2 contract (hash-only + IPFS)
+    CONTRACT_ADDRESS_V2 = os.environ.get('CONTRACT_ADDRESS_V2')
+
+    # Pinata IPFS
+    PINATA_API_KEY = os.environ.get('PINATA_API_KEY')
+    PINATA_API_SECRET = os.environ.get('PINATA_API_SECRET')
+
     # HMAC 보안 해시 설정
     # HMAC secret key - 별도 설정이 없으면 PRIVATE_KEY 사용 (보안 강화)
     # 공격자가 네트워크 중간에서 데이터와 해시를 함께 수정하는 것을 방지

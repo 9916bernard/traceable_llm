@@ -1,0 +1,86 @@
+[
+  {
+    "test_number": 1,
+    "timestamp": "2026-04-02T15:30:13.820554+00:00",
+    "category": "short",
+    "prompt_length": 12,
+    "response_length": 41,
+    "success": true,
+    "content_hash": "5b8fd58eb5902902b3f93ba8032f66acaf4259f696f6a767097a2f87fce8f7e8",
+    "ipfs_cid": "QmPZ9gcCEpqKTo6aq61g2nXGUhM4iCL3ewB6LDXZCtioEB",
+    "ipfs_pin_time": 0.0,
+    "estimated_gas": 254284,
+    "gas_estimation_time": 0.21007895469665527,
+    "commit": {
+      "transaction_hash": "81becd1bec4150d92cdd4596ba9dae8c340c741eae5570bcebb6715c15a8abc3",
+      "block_number": 10575405,
+      "gas_used": 251124,
+      "gas_price_gwei": 1.5,
+      "gas_cost_eth": 0.000376686,
+      "submit_time": 0.04925107955932617,
+      "confirm_time": 10.335829019546509,
+      "total_commit_time": 10.385080099105835
+    },
+    "verification": {
+      "hash_exists": false,
+      "verify_time": 0.1535637378692627,
+      "retrieve_time": 0.1344897747039795
+    }
+  },
+  {
+    "test_number": 2,
+    "timestamp": "2026-04-02T15:30:26.862193+00:00",
+    "category": "medium",
+    "prompt_length": 207,
+    "response_length": 480,
+    "success": true,
+    "content_hash": "9ee6cc69888c940e0a1ae4a4cc5f2639afc11faa03a0c26af17c64ed08472f2e",
+    "ipfs_cid": "QmbWqxBEKC3P8tqsKc98xmWNzrzDtRLMiMPL8wBuTGsMnR",
+    "ipfs_pin_time": 0.0,
+    "estimated_gas": 237049,
+    "gas_estimation_time": 0.14284801483154297,
+    "commit": {
+      "transaction_hash": "c0ac6f7b2ce9cb860b105c85ce5f343b575e2d28fe133560a6c88991c448ecfb",
+      "block_number": 10575406,
+      "gas_used": 234024,
+      "gas_price_gwei": 1.5,
+      "gas_cost_eth": 0.000351036,
+      "submit_time": 0.04831886291503906,
+      "confirm_time": 9.703979015350342,
+      "total_commit_time": 9.75229787826538
+    },
+    "verification": {
+      "hash_exists": true,
+      "verify_time": 0.19474101066589355,
+      "retrieve_time": 0.1314229965209961
+    }
+  },
+  {
+    "test_number": 3,
+    "timestamp": "2026-04-02T15:30:39.275400+00:00",
+    "category": "long",
+    "prompt_length": 1378,
+    "response_length": 1730,
+    "success": true,
+    "content_hash": "f191cad9fc7211bbb0ed59663f46db281f7c4def515cff6889c6bc19874cb8e2",
+    "ipfs_cid": "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG",
+    "ipfs_pin_time": 0.0,
+    "estimated_gas": 237049,
+    "gas_estimation_time": 0.12870478630065918,
+    "commit": {
+      "transaction_hash": "eb422a4db517a1db33e4288c2877699dba336eeb905f9cfdf9506f842818ce50",
+      "block_number": 10575407,
+      "gas_used": 234024,
+      "gas_price_gwei": 1.5,
+      "gas_cost_eth": 0.000351036,
+      "submit_time": 0.050889015197753906,
+      "confirm_time": 9.231520175933838,
+      "total_commit_time": 9.282409191131592
+    },
+    "verification": {
+      "hash_exists": true,
+      "verify_time": 0.13632488250732422,
+      "retrieve_time": 0.17923402786254883
+    }
+  }
+]

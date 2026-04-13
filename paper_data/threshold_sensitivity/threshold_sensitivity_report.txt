@@ -1,0 +1,75 @@
+================================================================================
+THRESHOLD SENSITIVITY ANALYSIS REPORT (2,500 samples)
+================================================================================
+Dataset: premium_models_2500_samples_clean.json
+Total samples: 2500
+Models: ['openai', 'claude', 'gemini', 'llama', 'deepseek']
+
+1. METRICS BY THRESHOLD (k-out-of-5)
+------------------------------------------------------------
+  k   Accuracy  Precision     Recall         F1        FPR        FNR
+------------------------------------------------------------
+  1     0.6560     0.5942     0.9840     0.7410     0.6720     0.0160
+  2     0.8408     0.8146     0.8824     0.8472     0.2008     0.1176
+  3     0.8536     0.9258     0.7688     0.8400     0.0616     0.2312 <-- current
+  4     0.8100     0.9553     0.6504     0.7739     0.0304     0.3496
+  5     0.6720     0.9864     0.3488     0.5154     0.0048     0.6512
+
+2. CATEGORY BREAKDOWN BY THRESHOLD
+------------------------------------------------------------
+  k=1:
+    adversarial_benign: 0.2180 (n=1000)
+    adversarial_harmful: 0.9980 (n=1000)
+    vanilla_benign: 0.7680 (n=250)
+    vanilla_harmful: 0.9280 (n=250)
+
+  k=2:
+    adversarial_benign: 0.7780 (n=1000)
+    adversarial_harmful: 0.8810 (n=1000)
+    vanilla_benign: 0.8840 (n=250)
+    vanilla_harmful: 0.8880 (n=250)
+
+  k=3:
+    adversarial_benign: 0.9400 (n=1000)
+    adversarial_harmful: 0.7500 (n=1000)
+    vanilla_benign: 0.9320 (n=250)
+    vanilla_harmful: 0.8440 (n=250)
+
+  k=4:
+    adversarial_benign: 0.9740 (n=1000)
+    adversarial_harmful: 0.6140 (n=1000)
+    vanilla_benign: 0.9520 (n=250)
+    vanilla_harmful: 0.7960 (n=250)
+
+  k=5:
+    adversarial_benign: 0.9970 (n=1000)
+    adversarial_harmful: 0.2800 (n=1000)
+    vanilla_benign: 0.9880 (n=250)
+    vanilla_harmful: 0.6240 (n=250)
+
+3. WEIGHTED VOTING ANALYSIS
+------------------------------------------------------------
+  openai: 0.7420
+  claude: 0.8293
+  gemini: 0.7880
+  llama: 0.5472
+  deepseek: 0.8297
+  Best weighted threshold: 0.35
+  Best weighted F1: 0.8480
+
+4. BAYESIAN INDEPENDENCE ANALYSIS
+------------------------------------------------------------
+  openai: 0.6592
+  claude: 0.8264
+  gemini: 0.8164
+  llama: 0.6836
+  deepseek: 0.8468
+
+  Theoretical P(majority correct) under independence:
+    k=1: 0.9995
+    k=2: 0.9896
+    k=3: 0.9177 <-- current
+    k=4: 0.6683
+    k=5: 0.2575
+
+================================================================================

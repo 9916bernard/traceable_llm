@@ -8,7 +8,7 @@ from config import Config
 class BlockchainService:
     """블록체인 연동 서비스"""
 #region 생성자
-    def __init__(self, rpc_url: str, private_key: str, contract_address: str):
+    def __init__(self, rpc_url: str, private_key: str, contract_address: str, contract_version: str = 'v1'):
         # 우리가 Web3 HTTP 사용해서 rpc_url: sepolia testnet 에 연결해서 반환하는 w3 객체 생성
         self.w3 = Web3(Web3.HTTPProvider(rpc_url))
         # 개인키 정리 (0x 접두사 제거 후 다시 추가) 자꾸 해시 포멧 안맞는다해서 넣음
@@ -16,12 +16,13 @@ class BlockchainService:
             private_key = private_key[2:]
         self.private_key = '0x' + private_key
         self.contract_address = contract_address
+        self.contract_version = contract_version
         # 계정 객체 생성 (지갑)
         self.account = self.w3.eth.account.from_key(self.private_key)
-        
+
         # 컴파일된 ABI 파일에서 로드
         self.contract_abi = self._load_contract_abi()
-        
+
         self.contract = self.w3.eth.contract(
             address=Web3.to_checksum_address(contract_address),
             abi=self.contract_abi
@@ -32,7 +33,7 @@ class BlockchainService:
     def _load_contract_abi(self) -> list:
         """
         컴파일된 ABI 파일에서 ABI 로드
-        
+
         Returns:
             list: 컨트랙트 ABI
         """
@@ -40,14 +41,19 @@ class BlockchainService:
             # ABI 파일 경로 설정 (프로젝트 루트 기준)
             current_dir = os.path.dirname(os.path.abspath(__file__))
             project_root = os.path.dirname(os.path.dirname(current_dir))
+
+            if self.contract_version == 'v2':
+                abi_subpath = os.path.join('LLMVerificationV2.sol', 'LLMVerificationV2.json')
+            else:
+                abi_subpath = os.path.join('LLMVerification.sol', 'LLMVerification.json')
+
             abi_file_path = os.path.join(
                 project_root,
                 '..',
                 'smart-contracts',
                 'artifacts',
                 'contracts',
-                'LLMVerification.sol',
-                'LLMVerification.json'
+                abi_subpath
             )
             abi_file_path = os.path.abspath(abi_file_path)
             
@@ -411,7 +417,247 @@ class BlockchainService:
             }
     #endregion
 
-    
+    #region commit hash V2
+    def commit_hash_v2(self, content_hash_hex: str, ipfs_cid: str, consensus_votes: str, wait_for_confirmation: bool = True) -> Dict[str, Any]:
+        """
+        V2: IPFS CID + hash-only 블록체인 커밋
+
+        Args:
+            content_hash_hex: HMAC-SHA256 해시 (64자 hex string → bytes32)
+            ipfs_cid: IPFS Content Identifier
+            consensus_votes: Consensus 투표 결과 (예: "3/5")
+            wait_for_confirmation: True면 블록 confirmation까지 대기
+
+        Returns:
+            Dict: 트랜잭션 정보
+        """
+        import time
+
+        total_start_time = time.time()
+
+        try:
+            # 64-char hex → 32 bytes (bytes32)
+            content_hash_bytes32 = bytes.fromhex(content_hash_hex)
+
+            print("=" * 80)
+            print("🔗 BLOCKCHAIN V2 COMMIT DEBUG LOG")
+            print("=" * 80)
+            print(f"  contentHash (hex): {content_hash_hex}")
+            print(f"  contentHash (bytes32): {content_hash_bytes32.hex()}")
+            print(f"  ipfsCID: {ipfs_cid}")
+            print(f"  consensusVotes: {consensus_votes}")
+            print("=" * 80)
+
+            # 가스 추정
+            try:
+                estimated_gas = self.contract.functions.storeRecord(
+                    content_hash_bytes32, ipfs_cid, consensus_votes
+                ).estimate_gas({'from': self.account.address})
+                gas_limit = int(estimated_gas * 1.2)
+            except Exception as e:
+                gas_limit = 200000  # V2는 데이터가 적어 가스 소모 낮음
+                print(f"Gas estimation failed, using default: {e}")
+
+            # 가스 가격 설정
+            gas_price = self.w3.eth.gas_price
+            if self.w3.eth.chain_id == 11155111:
+                gas_price = int(gas_price * 1.5)
+            min_gas_price = 1000000000  # 1 gwei
+            if gas_price < min_gas_price:
+                gas_price = min_gas_price
+
+            # 트랜잭션 구성
+            transaction = self.contract.functions.storeRecord(
+                content_hash_bytes32, ipfs_cid, consensus_votes
+            ).build_transaction({
+                'from': self.account.address,
+                'gas': gas_limit,
+                'gasPrice': gas_price,
+                'nonce': self.w3.eth.get_transaction_count(self.account.address),
+            })
+
+            # 서명 및 전송
+            signed_txn = self.w3.eth.account.sign_transaction(transaction, self.private_key)
+
+            tx_submission_start = time.time()
+            tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+            tx_submission_time = time.time() - tx_submission_start
+
+            if not wait_for_confirmation:
+                total_commit_time = time.time() - total_start_time
+                estimated_gas_cost_wei = gas_limit * gas_price
+                estimated_gas_cost_eth = self.w3.from_wei(estimated_gas_cost_wei, 'ether')
+
+                return {
+                    'transaction_hash': tx_hash.hex(),
+                    'status': 'pending',
+                    'gas_limit': gas_limit,
+                    'gas_price': gas_price,
+                    'gas_price_gwei': self.w3.from_wei(gas_price, 'gwei'),
+                    'estimated_gas_cost_wei': estimated_gas_cost_wei,
+                    'estimated_gas_cost_eth': float(estimated_gas_cost_eth),
+                    'timing': {
+                        'tx_submission_time': tx_submission_time,
+                        'total_commit_time': total_commit_time
+                    },
+                    'message': 'V2 transaction submitted. Waiting for confirmation...'
+                }
+
+            tx_confirmation_start = time.time()
+            tx_receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
+            tx_confirmation_time = time.time() - tx_confirmation_start
+
+            total_commit_time = time.time() - total_start_time
+            gas_cost_wei = tx_receipt.gasUsed * gas_price
+            gas_cost_eth = self.w3.from_wei(gas_cost_wei, 'ether')
+
+            return {
+                'transaction_hash': tx_hash.hex(),
+                'block_number': tx_receipt.blockNumber,
+                'gas_used': tx_receipt.gasUsed,
+                'gas_price': gas_price,
+                'gas_price_gwei': self.w3.from_wei(gas_price, 'gwei'),
+                'gas_cost_wei': gas_cost_wei,
+                'gas_cost_eth': float(gas_cost_eth),
+                'status': 'success',
+                'timing': {
+                    'tx_submission_time': tx_submission_time,
+                    'tx_confirmation_time': tx_confirmation_time,
+                    'total_commit_time': total_commit_time
+                }
+            }
+
+        except Exception as e:
+            error_msg = str(e)
+            if "insufficient funds" in error_msg.lower():
+                error_msg = "계정 잔액이 부족합니다. Sepolia faucet에서 ETH를 받아주세요."
+            elif "already exists" in error_msg.lower():
+                error_msg = "이미 동일한 해시가 블록체인에 존재합니다."
+
+            return {
+                'status': 'error',
+                'error_message': error_msg,
+                'original_error': str(e)
+            }
+    #endregion
+
+    #region verify V2
+    def verify_transaction_hash_v2(self, transaction_hash: str) -> Dict[str, Any]:
+        """
+        V2 트랜잭션 해시 검증 (hash-only + IPFS CID 추출)
+
+        Args:
+            transaction_hash: 검증할 트랜잭션 해시
+
+        Returns:
+            Dict: content_hash, ipfs_cid, consensus_votes 등
+        """
+        import time
+
+        total_verification_start = time.time()
+
+        try:
+            rpc_call_start = time.time()
+            tx = self.w3.eth.get_transaction(transaction_hash)
+            rpc_call_time_tx = time.time() - rpc_call_start
+
+            if tx is None:
+                return {
+                    'exists': False,
+                    'status': 'error',
+                    'error_message': '트랜잭션을 찾을 수 없습니다'
+                }
+
+            rpc_call_receipt_start = time.time()
+            receipt = self.w3.eth.get_transaction_receipt(transaction_hash)
+            rpc_call_time_receipt = time.time() - rpc_call_receipt_start
+
+            if receipt is None:
+                return {
+                    'exists': True,
+                    'status': 'pending',
+                    'error_message': '트랜잭션이 아직 처리되지 않았습니다 (pending)',
+                    'transaction_hash': transaction_hash,
+                    'from_address': tx.get('from'),
+                    'to_address': tx.get('to'),
+                    'etherscan_url': f"https://sepolia.etherscan.io/tx/{transaction_hash}"
+                }
+
+            is_success = receipt.status == 1
+
+            # V2 input data 디코딩
+            input_data_hex = tx.get('input', '0x')
+            decoded_v2 = None
+
+            try:
+                if input_data_hex and input_data_hex != '0x':
+                    decoded_v2 = self._decode_input_data_v2(input_data_hex)
+            except Exception as e:
+                print(f"V2 Input Data 디코딩 오류: {str(e)}")
+
+            total_verification_time = time.time() - total_verification_start
+
+            result = {
+                'exists': True,
+                'transaction_hash': transaction_hash,
+                'block_number': receipt.blockNumber,
+                'gas_used': receipt.gasUsed,
+                'status': 'success' if is_success else 'failed',
+                'is_success': is_success,
+                'from_address': tx.get('from'),
+                'to_address': tx.get('to'),
+                'etherscan_url': f"https://sepolia.etherscan.io/tx/{transaction_hash}",
+                'timing': {
+                    'rpc_call_time_tx': rpc_call_time_tx,
+                    'rpc_call_time_receipt': rpc_call_time_receipt,
+                    'total_verification_time': total_verification_time
+                }
+            }
+
+            if decoded_v2:
+                result['content_hash'] = decoded_v2['content_hash']
+                result['ipfs_cid'] = decoded_v2['ipfs_cid']
+                result['consensus_votes'] = decoded_v2['consensus_votes']
+
+            return result
+
+        except Exception as e:
+            error_msg = str(e)
+            if "not found" in error_msg.lower() or "unknown" in error_msg.lower():
+                return {
+                    'exists': False,
+                    'status': 'error',
+                    'error_message': '트랜잭션을 찾을 수 없습니다'
+                }
+            return {
+                'exists': False,
+                'status': 'error',
+                'error_message': f'트랜잭션 조회 실패: {error_msg}'
+            }
+
+    def _decode_input_data_v2(self, input_data_hex: str) -> Optional[Dict[str, Any]]:
+        """V2 트랜잭션 Input Data 디코딩"""
+        try:
+            if len(input_data_hex) <= 10:
+                return None
+
+            decoded = self.contract.decode_function_input(input_data_hex)
+            function_obj, params = decoded
+
+            # bytes32 → hex string
+            content_hash_bytes = params.get('contentHash', b'')
+            content_hash_hex = content_hash_bytes.hex() if isinstance(content_hash_bytes, bytes) else str(content_hash_bytes)
+
+            return {
+                'content_hash': content_hash_hex,
+                'ipfs_cid': params.get('ipfsCID', ''),
+                'consensus_votes': params.get('consensusVotes', '')
+            }
+        except Exception as e:
+            print(f"V2 Input Data 디코딩 오류: {str(e)}")
+            return None
+    #endregion
+
 # 지금은 쓰이지 않음. 나중에 더 세세한 정보가 필요하면 사용
     # def verify_llm_record(self, hash_value: str) -> Dict[str, Any]:
     #     """
