@@ -118,6 +118,10 @@ revised latex version.zip
 
 # LaTeX reviewer response (kept local only)
 reviewer_response.tex
+reviewer_response_R2.*
+
+# Revision submission bundle (kept local only)
+submission_R2/
 *.aux
 *.bbl
 *.blg

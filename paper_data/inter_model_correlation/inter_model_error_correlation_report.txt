@@ -1,0 +1,27 @@
+Inter-Model Error Correlation Analysis
+==================================================
+source: analysis/results/paper_used_data/premium_models_2500_samples_clean.json
+samples: 2500   models: ['openai', 'claude', 'gemini', 'llama', 'deepseek']
+
+Per-model error rate (1 - accuracy):
+  openai     34.08%
+  claude     17.36%
+  gemini     18.36%
+  llama      31.64%
+  deepseek   15.32%
+
+Pairwise error correlation (phi):
+         openai   claude   gemini    llama  deepsee
+openai    1.000    0.225   -0.162   -0.411   -0.104
+claude    0.225    1.000    0.361    0.140    0.430
+gemini   -0.162    0.361    1.000    0.504    0.670
+ llama   -0.411    0.140    0.504    1.000    0.472
+deepse   -0.104    0.430    0.670    0.472    1.000
+
+Off-diagonal summary:
+  mean phi   = 0.212
+  median phi = 0.293
+  min phi    = -0.411
+  max phi    = 0.670
+  most correlated pair : gemini-deepseek (0.670)
+  least correlated pair: openai-llama (-0.411)
